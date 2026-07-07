@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 
 public record Reading(
         String customerReference,
-        String product,
+        ProductType product,
         OffsetDateTime date,
         double meterReading
 ) {
