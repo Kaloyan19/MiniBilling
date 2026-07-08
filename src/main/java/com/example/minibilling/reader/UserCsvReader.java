@@ -21,7 +21,15 @@ public class UserCsvReader implements FileReader<User> {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.trim().split("\\s*,\\s*");
-                users.add(new User(parts[0], parts[1], Integer.parseInt(parts[2])));
+
+                if (parts.length != 3) {
+                    throw new IllegalArgumentException("Невалиден ред в users.csv: " + line);
+                }
+
+                users.add(new User
+                        (parts[0],
+                                parts[1],
+                                Integer.parseInt(parts[2])));
             }
         }
         return users;

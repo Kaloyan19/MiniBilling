@@ -23,6 +23,11 @@ public class ReadingCsvReader implements FileReader<Reading> {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.trim().split("\\s*,\\s*");
+
+                if (parts.length != 4) {
+                    throw new IllegalArgumentException("Невалиден ред в users.csv: " + line);
+                }
+
                 readings.add(new Reading(
                         parts[0],
                         ProductType.valueOf(parts[1].toUpperCase()),

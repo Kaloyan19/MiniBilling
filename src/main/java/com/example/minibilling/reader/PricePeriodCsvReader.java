@@ -23,6 +23,11 @@ public class PricePeriodCsvReader implements FileReader<PricePeriod> {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.trim().split("\\s*,\\s*");
+
+                if (parts.length != 4) {
+                    throw new IllegalArgumentException("Невалиден ред в users.csv: " + line);
+                }
+
                 prices.add(new PricePeriod(
                         ProductType.valueOf(parts[0].toUpperCase()),
                         LocalDate.parse(parts[1]),

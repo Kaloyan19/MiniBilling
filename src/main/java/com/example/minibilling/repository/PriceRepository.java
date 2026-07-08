@@ -50,6 +50,10 @@ public class PriceRepository {
         return Integer.parseInt(fileName.replace("prices-", "").replace(".csv", ""));
     }
 
+    public List<PricePeriod> findAll() {
+        return prices;
+    }
+
     public List<PricePeriod> findByPriceList(int priceListNumber) {
         return prices.stream()
                 .filter(p -> p.priceListNumber() == priceListNumber)
