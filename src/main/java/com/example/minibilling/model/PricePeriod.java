@@ -17,7 +17,7 @@ public record PricePeriod(
         if (price < 0) {
             throw new IllegalArgumentException("Цената не може да е отрицателна: " + price);
         }
-        if (priceListNumber < 1) {
+        if (priceListNumber < 0) {
             throw new IllegalArgumentException("Невалиден номер на ценова листа: " + priceListNumber);
         }
     }

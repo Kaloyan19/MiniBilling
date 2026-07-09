@@ -1,5 +1,6 @@
 package com.example.minibilling.service;
 
+import com.example.minibilling.exception.UserNotFoundException;
 import com.example.minibilling.model.*;
 import com.example.minibilling.repository.PriceRepository;
 import com.example.minibilling.repository.ReadingRepository;
@@ -10,8 +11,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -39,17 +42,20 @@ public class BillingService {
         );
     }
 
-    public List<Invoice> generateAllInvoices(){
-        return userRepository.findAll().stream()
-                .map(this::generateInvoice)
-                .toList();
-    }
+    public Optional<Invoice> generateInvoice(String reference, YearMonth period){
+        User user = userRepository.findAll().stream()
+                .filter(u-> u.reference().equals(reference))
+                .findFirst()
+                .orElseThrow(() -> new UserNotFoundException(reference));
 
-    private Invoice generateInvoice(User user) {
         List<Reading> readings = findReadings(user);
+        if (readings.size() < 2){
+            return Optional.empty();
+        }
+
         List<PricePeriod> prices = findPrices(user);
         List<InvoiceLine> lines = createInvoiceLines(readings, prices, user);
-        return buildInvoice(user, lines);
+        return Optional.of(buildInvoice(user, lines));
     }
 
     private List<Reading> findReadings(User user) {
@@ -76,10 +82,11 @@ public class BillingService {
     private InvoiceLine createInvoiceLine(Reading from, Reading to,
                                           List<PricePeriod> prices,
                                           int index, User user) {
-        double consumption = to.meterReading() - from.meterReading();
+
+        double consumption = round2(to.meterReading() - from.meterReading());
         List<PricePeriod> applicablePrices = findApplicablePricePeriods(prices, from, to);
         PricePeriod price = applicablePrices.get(0);
-        double amount = consumption * price.price();
+        double amount = round2(consumption * price.price());
 
         return new InvoiceLine(index, consumption, from.date(), to.date(),
                 from.product().name(), price.price(), user.priceListNumber(), amount);
@@ -104,9 +111,9 @@ public class BillingService {
     }
 
     private Invoice buildInvoice(User user, List<InvoiceLine> lines) {
-        double totalAmount = lines.stream()
-                .mapToDouble(InvoiceLine::amount)
-                .sum();
+        double totalAmount = round2(lines.stream().
+                mapToDouble(InvoiceLine::amount)
+                .sum());
         return new Invoice(
                 OffsetDateTime.now(),
                 String.valueOf(invoiceCounter.getAndIncrement()),
@@ -115,6 +122,14 @@ public class BillingService {
                 totalAmount,
                 lines
         );
+    }
+
+    private double round2(double value){
+        return Math.ceil(value * 100) / 100.00;
+    }
+
+    private double round3(double value){
+        return Math.ceil(value * 1000) / 100.00;
     }
 
 }

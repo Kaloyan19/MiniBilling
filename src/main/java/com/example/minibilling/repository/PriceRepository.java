@@ -39,6 +39,11 @@ public class PriceRepository {
 
     private void loadPriceFile(Path path) throws IOException {
         int priceListNumber = extractPriceListNumber(path);
+
+        if (priceListNumber < 1) {
+            throw new IllegalArgumentException("Невалиден номер на ценова листа: " + priceListNumber);
+        }
+
         List<PricePeriod> periodList = pricePeriodCsvReader.read(path);
         periodList.forEach(p -> prices.add(
                 new PricePeriod(p.product(), p.startDate(), p.endDate(), p.price(), priceListNumber)
