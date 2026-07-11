@@ -49,7 +49,7 @@ public class BillingService {
                 .findFirst()
                 .orElseThrow(() -> new UserNotFoundException(reference));
 
-        List<Reading> readings = findReadings(user);
+        List<Reading> readings = findReadings(user, period);
         if (readings.size() < 2){
             return Optional.empty();
         }
@@ -59,9 +59,12 @@ public class BillingService {
         return Optional.of(buildInvoice(user, lines));
     }
 
-    private List<Reading> findReadings(User user) {
+    private List<Reading> findReadings(User user, YearMonth period) {
+        LocalDate endOfPeriod = period.atEndOfMonth();
+
         return readingRepository.findByCustomerReference(user.reference())
                 .stream()
+                .filter(r -> !r.date().toLocalDate().isAfter(endOfPeriod))
                 .sorted(Comparator.comparing(Reading::date))
                 .toList();
     }
