@@ -22,9 +22,10 @@ public class BillingController {
     @GetMapping("/{reference}")
     public ResponseEntity<Invoice> getInvoice(
             @PathVariable String reference,
-            @RequestParam String period) {
+            @RequestParam int year,
+            @RequestParam int month) {
 
-        YearMonth yearMonth = YearMonth.parse(period.trim());
+        YearMonth yearMonth = YearMonth.of(year, month);
         Optional<Invoice> invoice = billingService.generateInvoice(reference, yearMonth);
 
         return invoice
