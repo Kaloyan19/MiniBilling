@@ -1,3 +1,4 @@
+import './App.css';
 import { useState } from "react";
 
 function App() {
@@ -49,10 +50,10 @@ function App() {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div className="container">
       <h1>MiniBilling</h1>
 
-      <div>
+      <div className="form">
         <input
           placeholder="Референтен номер"
           value={reference}
@@ -71,15 +72,15 @@ function App() {
         <button onClick={handleSubmit}>Генерирай фактура</button>
       </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
 
       {invoice && (
-        <div>
+        <div className="invoice">
           <h2>Фактура №{invoice.documentNumber}</h2>
           <p>Клиент: {invoice.consumer}</p>
           <p>Референтен номер: {invoice.reference}</p>
           <p>Дата: {formatDate(invoice.documentDate)}</p>
-          <p>Обща сума: {formatAmount(invoice.totalAmount)}</p>
+          <p className="total">Обща сума: {formatAmount(invoice.totalAmount)}</p>
 
           <h3>Линии:</h3>
           <table border="1">
