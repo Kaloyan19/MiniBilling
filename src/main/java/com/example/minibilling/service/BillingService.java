@@ -131,6 +131,14 @@ public class BillingService {
         );
     }
 
+    public String findConsumerName(String reference) {
+        return userRepository.findAll().stream()
+                .filter(u -> u.reference().equals(reference))
+                .findFirst()
+                .orElseThrow(() -> new UserNotFoundException(reference))
+                .name();
+    }
+
     private double round2(double value){
         return Math.ceil(value * 100) / 100.00;
     }

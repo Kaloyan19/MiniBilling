@@ -20,7 +20,8 @@ function App() {
   };
 
   const formatAmount = (amount) => {
-    return amount.toFixed(2) + "€"
+    if (amount === undefined || amount === null) return "0.00 лв.";
+    return amount.toFixed(2) + "€";
   };
 
   const handleSubmit = async () => {
@@ -29,7 +30,8 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/invoices/${reference}?year=${year}&month=${month}`
+        `http://localhost:8080/invoices/${reference}?year=${year}&month=${month}`,
+        { method: "POST" }  
       );
 
       if (response.status === 404) {
