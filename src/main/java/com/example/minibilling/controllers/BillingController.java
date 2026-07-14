@@ -29,14 +29,10 @@ public class BillingController {
             @RequestParam int month) throws Exception {
 
         YearMonth yearMonth = YearMonth.of(year, month);
-        Optional<Invoice> invoice = billingService.generateInvoice(reference, yearMonth);
+        Invoice invoice = billingService.getOrGenerateInvoice(reference, yearMonth);
 
-        if (invoice.isEmpty()){
-            return ResponseEntity.noContent().build();
-        }
-
-        invoiceFileWriter.write(invoice.get(), reference, yearMonth);
-        return ResponseEntity.ok(invoice.get());
+        if (invoice == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(invoice);
     }
 
     @GetMapping("/{reference}")
@@ -46,14 +42,13 @@ public class BillingController {
             @RequestParam int month) throws Exception{
 
         YearMonth yearMonth = YearMonth.of(year, month);
-
         String consumer = billingService.findConsumerName(reference);
-
         Invoice invoice = invoiceFileWriter.read(consumer, reference, yearMonth);
 
         if (invoice == null) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.noContent().build();
         }
+
         return ResponseEntity.ok(invoice);
     }
 }

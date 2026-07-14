@@ -9,6 +9,7 @@ import com.example.minibilling.validator.BillingDataValidator;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
@@ -26,12 +27,15 @@ public class BillingService {
     private final PriceRepository priceRepository;
     private final BillingDataValidator validator;
     private final AtomicInteger invoiceCounter = new AtomicInteger(10000);
+    private final InvoiceFileWriter invoiceFileWriter;
 
-    public BillingService(UserRepository userRepository, ReadingRepository readingRepository, PriceRepository priceRepository, BillingDataValidator validator){
+    public BillingService(UserRepository userRepository, ReadingRepository readingRepository, PriceRepository priceRepository,
+                          BillingDataValidator validator, InvoiceFileWriter invoiceFileWriter){
         this.userRepository = userRepository;
         this.readingRepository = readingRepository;
         this.priceRepository = priceRepository;
         this.validator = validator;
+        this.invoiceFileWriter = invoiceFileWriter;
     }
 
     @PostConstruct
@@ -41,6 +45,19 @@ public class BillingService {
                 readingRepository.findAll(),
                 priceRepository.findAll()
         );
+    }
+
+    public Invoice getOrGenerateInvoice(String reference, YearMonth period) throws IOException {
+        String consumer = findConsumerName(reference);
+
+        Invoice existing = invoiceFileWriter.read(consumer, reference, period);
+        if (existing != null) return existing;
+
+        Optional<Invoice> invoice = generateInvoice(reference, period);
+        if (invoice.isEmpty()) return null;
+
+        invoiceFileWriter.write(invoice.get(), reference, period);
+        return invoice.get();
     }
 
     public Optional<Invoice> generateInvoice(String reference, YearMonth period){

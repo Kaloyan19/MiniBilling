@@ -26,22 +26,9 @@ public class InvoiceFileWriter {
 
     public void write(Invoice invoice, String reference, YearMonth period) throws IOException {
         Path folder = createFolder(invoice.consumer(), reference);
-        deleteExistingFile(folder, period);
         Path filePath = buildFilePath(folder, period, invoice.documentNumber());
         objectMapper.writerWithDefaultPrettyPrinter()
                 .writeValue(filePath.toFile(), invoice);
-    }
-
-    private void deleteExistingFile(Path folder, YearMonth period) throws IOException {
-        String monthName = period.getMonth()
-                .getDisplayName(TextStyle.FULL, new Locale("bg"));
-        String year = String.format("%02d", period.getYear() % 100);
-
-        try (var stream = Files.newDirectoryStream(folder, "*-" + monthName + "-" + year + ".json")) {
-            for (Path file : stream) {
-                Files.delete(file);
-            }
-        }
     }
 
     public Invoice read(String consumer, String reference, YearMonth period) throws IOException {
