@@ -47,12 +47,7 @@ public class BillingService {
         );
     }
 
-    public Invoice getOrGenerateInvoice(String reference, YearMonth period) throws IOException {
-        String consumer = findConsumerName(reference);
-
-        Invoice existing = invoiceFileWriter.read(consumer, reference, period);
-        if (existing != null) return existing;
-
+    public Invoice generateAndSaveInvoice(String reference, YearMonth period) throws IOException {
         Optional<Invoice> invoice = generateInvoice(reference, period);
         if (invoice.isEmpty()) return null;
 

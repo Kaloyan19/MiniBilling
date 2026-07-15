@@ -29,7 +29,7 @@ public class BillingController {
             @RequestParam int month) throws Exception {
 
         YearMonth yearMonth = YearMonth.of(year, month);
-        Invoice invoice = billingService.getOrGenerateInvoice(reference, yearMonth);
+        Invoice invoice = billingService.generateAndSaveInvoice(reference, yearMonth);
 
         if (invoice == null) return ResponseEntity.noContent().build();
         return ResponseEntity.ok(invoice);
