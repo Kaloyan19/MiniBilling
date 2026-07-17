@@ -1,9 +1,9 @@
 package com.example.minibilling.validator;
 
 import com.example.minibilling.exception.BillingDataException;
-import com.example.minibilling.model.PricePeriod;
-import com.example.minibilling.model.Reading;
-import com.example.minibilling.model.User;
+import com.example.minibilling.model.domain.PricePeriod;
+import com.example.minibilling.model.domain.Reading;
+import com.example.minibilling.model.domain.User;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

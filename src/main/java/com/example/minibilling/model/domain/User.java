@@ -1,4 +1,4 @@
-package com.example.minibilling.model;
+package com.example.minibilling.model.domain;
 
 public record User(
         String name,

@@ -1,13 +1,12 @@
 package com.example.minibilling.controllers;
 
-import com.example.minibilling.model.Invoice;
+import com.example.minibilling.model.domain.Invoice;
 import com.example.minibilling.service.BillingService;
 import com.example.minibilling.service.InvoiceFileWriter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.YearMonth;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/invoices")

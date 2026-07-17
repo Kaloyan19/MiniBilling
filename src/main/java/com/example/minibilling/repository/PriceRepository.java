@@ -1,67 +1,42 @@
 package com.example.minibilling.repository;
 
-import com.example.minibilling.model.PricePeriod;
-import com.example.minibilling.reader.PricePeriodCsvReader;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Value;
+import com.example.minibilling.model.domain.PricePeriod;
+import com.example.minibilling.model.entity.PriceEntity;
+import com.example.minibilling.repository.jpa.PriceEntityRepository;
 import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 @Repository
 public class PriceRepository {
 
-    private final PricePeriodCsvReader pricePeriodCsvReader;
-    private List<PricePeriod> prices;
+    private final PriceEntityRepository priceEntityRepository;
 
-    @Value("${billing.input.dir}")
-    private String inputDir;
-
-    public PriceRepository(PricePeriodCsvReader pricePeriodCsvReader){
-        this.pricePeriodCsvReader = pricePeriodCsvReader;
+    public PriceRepository(PriceEntityRepository priceEntityRepository){
+        this.priceEntityRepository = priceEntityRepository;
     }
 
-    @PostConstruct
-    public void load() throws IOException {
-        prices = new ArrayList<>();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(
-                Path.of(inputDir), "prices-*.csv")) {
-            for (Path path : stream) {
-                loadPriceFile(path);
-            }
-        }
-    }
-
-    private void loadPriceFile(Path path) throws IOException {
-        int priceListNumber = extractPriceListNumber(path);
-
-        if (priceListNumber < 1) {
-            throw new IllegalArgumentException("Невалиден номер на ценова листа: " + priceListNumber);
-        }
-
-        List<PricePeriod> periodList = pricePeriodCsvReader.read(path);
-        periodList.forEach(p -> prices.add(
-                new PricePeriod(p.product(), p.startDate(), p.endDate(), p.price(), priceListNumber)
-        ));
-    }
-
-    private int extractPriceListNumber(Path path) {
-        String fileName = path.getFileName().toString();
-        return Integer.parseInt(fileName.replace("prices-", "").replace(".csv", ""));
+    public List<PricePeriod> findByPriceList(int priceList){
+        return priceEntityRepository.findByPriceList(priceList)
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     public List<PricePeriod> findAll() {
-        return prices;
+        return priceEntityRepository.findAll()
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
-    public List<PricePeriod> findByPriceList(int priceListNumber) {
-        return prices.stream()
-                .filter(p -> p.priceListNumber() == priceListNumber)
-                .toList();
+    private PricePeriod toDomain(PriceEntity entity){
+        return new PricePeriod(
+                entity.getProduct(),
+                entity.getStartDate(),
+                entity.getEndDate(),
+                entity.getPrice(),
+                entity.getPriceList()
+        );
     }
 }

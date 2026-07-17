@@ -1,6 +1,6 @@
 package com.example.minibilling.service;
 
-import com.example.minibilling.model.Invoice;
+import com.example.minibilling.model.domain.Invoice;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

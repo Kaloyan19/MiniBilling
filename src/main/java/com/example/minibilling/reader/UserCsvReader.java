@@ -1,6 +1,6 @@
 package com.example.minibilling.reader;
 
-import com.example.minibilling.model.User;
+import com.example.minibilling.model.domain.User;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;

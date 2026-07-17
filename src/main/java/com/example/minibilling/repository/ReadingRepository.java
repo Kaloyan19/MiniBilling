@@ -1,40 +1,41 @@
 package com.example.minibilling.repository;
 
-import com.example.minibilling.model.Reading;
-import com.example.minibilling.reader.ReadingCsvReader;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Value;
+import com.example.minibilling.model.domain.Reading;
+import com.example.minibilling.model.entity.ReadingEntity;
+import com.example.minibilling.repository.jpa.ReadingEntityRepository;
 import org.springframework.stereotype.Repository;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 
 @Repository
 public class ReadingRepository {
 
-    private final ReadingCsvReader readingCsvReader;
-    private List<Reading> readings;
+    private final ReadingEntityRepository readingEntityRepository;
 
-    @Value("${billing.input.dir}")
-    private String inputDir;
-
-    public ReadingRepository(ReadingCsvReader readingCsvReader){
-        this.readingCsvReader = readingCsvReader;
-    }
-
-    @PostConstruct
-    public void load() throws IOException{
-        readings = readingCsvReader.read(Path.of(inputDir + "readings.csv"));
-    }
-
-    public List<Reading> findAll(){
-        return readings;
+    public ReadingRepository(ReadingEntityRepository readingEntityRepository){
+        this.readingEntityRepository = readingEntityRepository;
     }
 
     public List<Reading> findByCustomerReference(String reference) {
-        return readings.stream()
-                .filter(r -> r.customerReference().equals(reference))
+        return readingEntityRepository.findByUserReference(reference)
+                .stream()
+                .map(this::toDomain)
                 .toList();
+    }
+
+    public List<Reading> findAll() {
+        return readingEntityRepository.findAll()
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    private Reading toDomain(ReadingEntity entity){
+        return new Reading(
+                entity.getUser().getReference(),
+                entity.getProduct(),
+                entity.getDateTime(),
+                entity.getLastReading().doubleValue()
+        );
     }
 }

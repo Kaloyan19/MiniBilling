@@ -1,7 +1,7 @@
 package com.example.minibilling.service;
 
 import com.example.minibilling.exception.UserNotFoundException;
-import com.example.minibilling.model.*;
+import com.example.minibilling.model.domain.*;
 import com.example.minibilling.repository.PriceRepository;
 import com.example.minibilling.repository.ReadingRepository;
 import com.example.minibilling.repository.UserRepository;

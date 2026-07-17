@@ -1,4 +1,4 @@
-package com.example.minibilling.model;
+package com.example.minibilling.model.domain;
 
 import java.time.OffsetDateTime;
 import java.util.List;
