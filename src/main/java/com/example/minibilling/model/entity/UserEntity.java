@@ -28,4 +28,9 @@ public class UserEntity {
     public String getName() {return name;}
     public String getReference() {return reference;}
     public int getPriceList() {return priceList;}
+
+    public void setId(String id) { this.id = id; }
+    public void setName(String name) { this.name = name; }
+    public void setReference(String reference) { this.reference = reference; }
+    public void setPriceList(int priceList) { this.priceList = priceList; }
 }

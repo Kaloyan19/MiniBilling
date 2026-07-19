@@ -25,26 +25,15 @@ public class BillingService {
     private final UserRepository userRepository;
     private final ReadingRepository readingRepository;
     private final PriceRepository priceRepository;
-    private final BillingDataValidator validator;
     private final AtomicInteger invoiceCounter = new AtomicInteger(10000);
     private final InvoiceFileWriter invoiceFileWriter;
 
     public BillingService(UserRepository userRepository, ReadingRepository readingRepository, PriceRepository priceRepository,
-                          BillingDataValidator validator, InvoiceFileWriter invoiceFileWriter){
+                           InvoiceFileWriter invoiceFileWriter){
         this.userRepository = userRepository;
         this.readingRepository = readingRepository;
         this.priceRepository = priceRepository;
-        this.validator = validator;
         this.invoiceFileWriter = invoiceFileWriter;
-    }
-
-    @PostConstruct
-    public void validate() {
-        validator.validateData(
-                userRepository.findAll(),
-                readingRepository.findAll(),
-                priceRepository.findAll()
-        );
     }
 
     public Invoice generateAndSaveInvoice(String reference, YearMonth period) throws IOException {

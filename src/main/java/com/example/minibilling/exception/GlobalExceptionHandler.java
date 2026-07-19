@@ -25,4 +25,9 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body("Невалиден период. Месецът трябва да е между 1 и 12.");
   }
+
+  @ExceptionHandler(ImportException.class)
+  public ResponseEntity<String> handleImportException(ImportException e){
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+  }
 }

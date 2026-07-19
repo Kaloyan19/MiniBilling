@@ -39,4 +39,31 @@ public class PriceEntity {
     public int getPriceList() { return priceList; }
     public FileImportEntity getFileImport() { return fileImport; }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setProduct(ProductType product) {
+        this.product = product;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public void setPriceList(int priceList) {
+        this.priceList = priceList;
+    }
+
+    public void setFileImport(FileImportEntity fileImport) {
+        this.fileImport = fileImport;
+    }
 }

@@ -39,4 +39,32 @@ public class ReadingEntity {
     public BigDecimal getLastReading() { return lastReading; }
     public boolean isInvoiced() { return invoiced; }
     public boolean isSelfReported() { return selfReported; }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setUser(UserEntity user) {
+        this.user = user;
+    }
+
+    public void setProduct(ProductType product) {
+        this.product = product;
+    }
+
+    public void setDateTime(OffsetDateTime dateTime) {
+        this.dateTime = dateTime;
+    }
+
+    public void setLastReading(BigDecimal lastReading) {
+        this.lastReading = lastReading;
+    }
+
+    public void setInvoiced(boolean invoiced) {
+        this.invoiced = invoiced;
+    }
+
+    public void setSelfReported(boolean selfReported) {
+        this.selfReported = selfReported;
+    }
 }
