@@ -45,6 +45,13 @@ public class PriceImporter implements FileImporter {
                         throw new ImportException("Невалиден ред в " + filename + ": " + line);
                     }
 
+                    if(priceEntityRepository.existsByProductAndStartDateAndPriceList(
+                            ProductType.valueOf(parts[0].toUpperCase()),
+                            LocalDate.parse(parts[1]),
+                            priceListNumber)) {
+                        throw new ImportException("Цена за " + parts[0] + " от " + parts[1] + " вече съществува!");
+                    }
+
                     PriceEntity entity = new PriceEntity();
                     entity.setId(UUID.randomUUID().toString().replace("-", ""));
                     entity.setProduct(ProductType.valueOf(parts[0].toUpperCase()));

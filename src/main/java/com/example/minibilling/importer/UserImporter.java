@@ -38,6 +38,10 @@ public class UserImporter implements FileImporter {
                         throw new ImportException("Невалиден ред в users.csv: " + line);
                     }
 
+                    if (userEntityRepository.findByReference(parts[1]) != null) {
+                        throw new ImportException("Потребител с референтен номер " + parts[1] + " вече съществува!");
+                    }
+
                     UserEntity entity = new UserEntity();
                     entity.setId(UUID.randomUUID().toString().replace("-", ""));
                     entity.setName(parts[0]);

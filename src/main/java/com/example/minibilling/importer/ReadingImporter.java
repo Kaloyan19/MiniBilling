@@ -49,6 +49,10 @@ public class ReadingImporter implements FileImporter{
                     UserEntity user = userEntityRepository.findByReference(reference);
                     if (user == null) continue;
 
+                    if (readingEntityRepository.existsByUserReferenceAndDateTime(reference, OffsetDateTime.parse(parts[2]))){
+                        throw new ImportException("Показание за потребител " + reference + " на " + parts[2] + " вече съществува!");
+                    }
+
                     ReadingEntity entity = new ReadingEntity();
                     entity.setId(UUID.randomUUID().toString().replace("-", ""));
                     entity.setUser(user);
