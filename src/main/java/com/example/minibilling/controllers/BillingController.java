@@ -1,6 +1,8 @@
 package com.example.minibilling.controllers;
 
 import com.example.minibilling.model.domain.Invoice;
+import com.example.minibilling.model.entity.InvoiceEntity;
+import com.example.minibilling.repository.InvoiceRepository;
 import com.example.minibilling.service.BillingService;
 import com.example.minibilling.service.InvoiceFileWriter;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +16,11 @@ import java.time.YearMonth;
 public class BillingController {
 
     private final BillingService billingService;
-    private final InvoiceFileWriter invoiceFileWriter;
+    private final InvoiceRepository invoiceRepository;
 
-    public BillingController(BillingService billingService, InvoiceFileWriter invoiceFileWriter){
+    public BillingController(BillingService billingService, InvoiceRepository invoiceRepository){
         this.billingService = billingService;
-        this.invoiceFileWriter = invoiceFileWriter;
+        this.invoiceRepository = invoiceRepository;
     }
 
     @PostMapping("/{reference}")
@@ -28,26 +30,22 @@ public class BillingController {
             @RequestParam int month) throws Exception {
 
         YearMonth yearMonth = YearMonth.of(year, month);
-        Invoice invoice = billingService.generateAndSaveInvoice(reference, yearMonth);
-
-        if (invoice == null) return ResponseEntity.noContent().build();
-        return ResponseEntity.ok(invoice);
+        return billingService.generateAndSaveInvoice(reference, yearMonth)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{reference}")
     public ResponseEntity<Invoice> getInvoice(
             @PathVariable String reference,
             @RequestParam int year,
-            @RequestParam int month) throws Exception{
+            @RequestParam int month) {
 
         YearMonth yearMonth = YearMonth.of(year, month);
-        String consumer = billingService.findConsumerName(reference);
-        Invoice invoice = invoiceFileWriter.read(consumer, reference, yearMonth);
+        InvoiceEntity entity = invoiceRepository.findByUserReferenceAndPeriod(
+                reference, yearMonth.toString());
 
-        if (invoice == null) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return ResponseEntity.ok(invoice);
+        if (entity == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(invoiceRepository.toDomain(entity));
     }
 }

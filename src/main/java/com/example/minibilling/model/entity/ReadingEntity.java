@@ -6,7 +6,10 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "readings")
+@Table(name = "readings", indexes = {
+        @Index(name = "idx_readings_user_id", columnList = "user_id"),
+        @Index(name = "idx_readings_date_time", columnList = "date_time")
+})
 public class ReadingEntity {
 
     @Id

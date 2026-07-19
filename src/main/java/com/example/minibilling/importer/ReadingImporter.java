@@ -6,7 +6,9 @@ import com.example.minibilling.model.entity.ReadingEntity;
 import com.example.minibilling.model.entity.UserEntity;
 import com.example.minibilling.repository.jpa.ReadingEntityRepository;
 import com.example.minibilling.repository.jpa.UserEntityRepository;
+import com.example.minibilling.validator.ImportValidator;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -21,10 +23,12 @@ public class ReadingImporter implements FileImporter{
 
     private final ReadingEntityRepository readingEntityRepository;
     private final UserEntityRepository userEntityRepository;
+    private final ImportValidator importValidator;
 
-    public ReadingImporter(ReadingEntityRepository readingEntityRepository, UserEntityRepository userEntityRepository) {
+    public ReadingImporter(ReadingEntityRepository readingEntityRepository, UserEntityRepository userEntityRepository, ImportValidator importValidator) {
         this.readingEntityRepository = readingEntityRepository;
         this.userEntityRepository = userEntityRepository;
+        this.importValidator = importValidator;
     }
 
     @Override
@@ -32,41 +36,51 @@ public class ReadingImporter implements FileImporter{
         return "readings.csv".equals(filename);
     }
 
+    @Transactional
     @Override
     public void importFile(MultipartFile file) throws ImportException {
-        try {
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] parts = line.trim().split("\\s*,\\s*");
-                    if (parts.length != 4) {
-                        throw new ImportException("Невалиден ред в readings.csv: " + line);
-                    }
-
-                    String reference = parts[0];
-                    UserEntity user = userEntityRepository.findByReference(reference);
-                    if (user == null) continue;
-
-                    if (readingEntityRepository.existsByUserReferenceAndDateTime(reference, OffsetDateTime.parse(parts[2]))){
-                        throw new ImportException("Показание за потребител " + reference + " на " + parts[2] + " вече съществува!");
-                    }
-
-                    ReadingEntity entity = new ReadingEntity();
-                    entity.setId(UUID.randomUUID().toString().replace("-", ""));
-                    entity.setUser(user);
-                    entity.setProduct(ProductType.valueOf(parts[1].toUpperCase()));
-                    entity.setDateTime(OffsetDateTime.parse(parts[2]));
-                    entity.setLastReading(new BigDecimal(parts[3]));
-                    entity.setInvoiced(false);
-                    entity.setSelfReported(false);
-
-                    readingEntityRepository.save(entity);
-                }
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                processLine(line);
             }
+        } catch (ImportException e) {
+            throw e;
         } catch (Exception e) {
             throw new ImportException("Грешка при импорт: " + e.getMessage());
         }
+    }
+
+    private void processLine(String line) throws ImportException {
+        String[] parts = line.trim().split("\\s*,\\s*");
+        if (parts.length != 4) {
+            throw new ImportException("Невалиден ред в readings.csv: " + line);
+        }
+        checkForDuplicate(parts);
+        ReadingEntity entity = buildEntity(parts);
+        importValidator.validateReading(parts[0], entity.getLastReading());
+        readingEntityRepository.save(entity);
+    }
+
+    private void checkForDuplicate(String[] parts) throws ImportException {
+        importValidator.validateReadingUser(parts[0]);
+        if (readingEntityRepository.existsByUserReferenceAndDateTime(
+                parts[0], OffsetDateTime.parse(parts[2]))) {
+            throw new ImportException("Показание за потребител " + parts[0] + " на " + parts[2] + " вече съществува!");
+        }
+    }
+
+    private ReadingEntity buildEntity(String[] parts) throws ImportException {
+        UserEntity user = userEntityRepository.findByReference(parts[0]);
+        ReadingEntity entity = new ReadingEntity();
+        entity.setId(UUID.randomUUID().toString().replace("-", ""));
+        entity.setUser(user);
+        entity.setProduct(ProductType.valueOf(parts[1].toUpperCase()));
+        entity.setDateTime(OffsetDateTime.parse(parts[2]));
+        entity.setLastReading(new BigDecimal(parts[3]));
+        entity.setInvoiced(false);
+        entity.setSelfReported(false);
+        return entity;
     }
 }

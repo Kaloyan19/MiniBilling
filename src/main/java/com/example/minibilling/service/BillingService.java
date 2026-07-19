@@ -2,21 +2,21 @@ package com.example.minibilling.service;
 
 import com.example.minibilling.exception.UserNotFoundException;
 import com.example.minibilling.model.domain.*;
+import com.example.minibilling.model.entity.InvoiceEntity;
+import com.example.minibilling.model.entity.LineEntity;
+import com.example.minibilling.model.entity.UserEntity;
+import com.example.minibilling.repository.InvoiceRepository;
 import com.example.minibilling.repository.PriceRepository;
 import com.example.minibilling.repository.ReadingRepository;
 import com.example.minibilling.repository.UserRepository;
-import com.example.minibilling.validator.BillingDataValidator;
-import jakarta.annotation.PostConstruct;
+import com.example.minibilling.repository.jpa.UserEntityRepository;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -26,22 +26,24 @@ public class BillingService {
     private final ReadingRepository readingRepository;
     private final PriceRepository priceRepository;
     private final AtomicInteger invoiceCounter = new AtomicInteger(10000);
-    private final InvoiceFileWriter invoiceFileWriter;
+    private final InvoiceRepository invoiceRepository;
+    private final UserEntityRepository userEntityRepository;
 
     public BillingService(UserRepository userRepository, ReadingRepository readingRepository, PriceRepository priceRepository,
-                           InvoiceFileWriter invoiceFileWriter){
+                          InvoiceRepository invoiceRepository, UserEntityRepository userEntityRepository){
         this.userRepository = userRepository;
         this.readingRepository = readingRepository;
         this.priceRepository = priceRepository;
-        this.invoiceFileWriter = invoiceFileWriter;
+        this.invoiceRepository = invoiceRepository;
+        this.userEntityRepository = userEntityRepository;
     }
 
-    public Invoice generateAndSaveInvoice(String reference, YearMonth period) throws IOException {
+    public Optional<Invoice> generateAndSaveInvoice(String reference, YearMonth period) {
         Optional<Invoice> invoice = generateInvoice(reference, period);
-        if (invoice.isEmpty()) return null;
+        if (invoice.isEmpty()) return Optional.empty();
 
-        invoiceFileWriter.write(invoice.get(), reference, period);
-        return invoice.get();
+        saveToDatabase(invoice.get(), reference, period);
+        return invoice;
     }
 
     public Optional<Invoice> generateInvoice(String reference, YearMonth period){
@@ -146,6 +148,36 @@ public class BillingService {
 
     private double round3(double value){
         return Math.ceil(value * 1000) / 100.00;
+    }
+
+    private void saveToDatabase(Invoice invoice, String reference, YearMonth period) {
+        UserEntity userEntity = userEntityRepository.findByReference(reference);
+
+        InvoiceEntity entity = new InvoiceEntity();
+        entity.setId(UUID.randomUUID().toString().replace("-", ""));
+        entity.setDateTime(invoice.documentDate());
+        entity.setNumber(invoice.documentNumber());
+        entity.setUser(userEntity);
+        entity.setTotalAmount(BigDecimal.valueOf(invoice.totalAmount()));
+        entity.setPeriod(period.toString());
+        entity.setPaid(false);
+
+        for (InvoiceLine line : invoice.lines()) {
+            LineEntity lineEntity = new LineEntity();
+            lineEntity.setId(UUID.randomUUID().toString().replace("-", ""));
+            lineEntity.setLineId(line.index());
+            lineEntity.setQuantity(BigDecimal.valueOf(line.quantity()));
+            lineEntity.setStartDateTime(line.lineStart());
+            lineEntity.setEndDateTime(line.lineEnd());
+            lineEntity.setProduct(ProductType.valueOf(line.product()));
+            lineEntity.setPrice(BigDecimal.valueOf(line.price()));
+            lineEntity.setPriceList(line.priceList());
+            lineEntity.setAmount(BigDecimal.valueOf(line.amount()));
+            lineEntity.setInvoice(entity);
+            entity.getLines().add(lineEntity);
+        }
+
+        invoiceRepository.save(entity);
     }
 
 }

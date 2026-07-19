@@ -25,6 +25,9 @@ public class InvoiceEntity {
     @Column(name = "total_amount")
     private BigDecimal totalAmount;
 
+    @Column(name = "period")
+    private String period;
+
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
     private List<LineEntity> lines = new ArrayList<>();
 
@@ -38,5 +41,14 @@ public class InvoiceEntity {
     public UserEntity getUser() { return user; }
     public BigDecimal getTotalAmount() { return totalAmount; }
     public List<LineEntity> getLines() { return lines; }
+    public String getPeriod() {return period;}
     public boolean isPaid() { return paid; }
+
+    public void setId(String id) { this.id = id; }
+    public void setDateTime(OffsetDateTime dateTime) { this.dateTime = dateTime; }
+    public void setNumber(String number) { this.number = number; }
+    public void setUser(UserEntity user) { this.user = user; }
+    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
+    public void setPeriod(String period) {this.period = period;}
+    public void setPaid(boolean paid) { this.paid = paid; }
 }

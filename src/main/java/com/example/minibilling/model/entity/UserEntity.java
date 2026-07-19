@@ -3,13 +3,17 @@ package com.example.minibilling.model.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+        @Index(name = "idx_users_reference", columnList = "reference")
+})
 public class UserEntity {
 
     @Id
     private String id;
 
     private String name;
+
+    @Column(unique = true)
     private String reference;
 
     @Column(name = "price_list")

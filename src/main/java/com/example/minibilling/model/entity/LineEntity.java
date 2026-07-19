@@ -49,4 +49,15 @@ public class LineEntity {
     public int getPriceList() { return priceList; }
     public BigDecimal getAmount() { return amount; }
     public InvoiceEntity getInvoice() { return invoice; }
+
+    public void setId(String id) { this.id = id; }
+    public void setLineId(int lineId) { this.lineId = lineId; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
+    public void setStartDateTime(OffsetDateTime startDateTime) { this.startDateTime = startDateTime; }
+    public void setEndDateTime(OffsetDateTime endDateTime) { this.endDateTime = endDateTime; }
+    public void setProduct(ProductType product) { this.product = product; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+    public void setPriceList(int priceList) { this.priceList = priceList; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public void setInvoice(InvoiceEntity invoice) { this.invoice = invoice; }
 }

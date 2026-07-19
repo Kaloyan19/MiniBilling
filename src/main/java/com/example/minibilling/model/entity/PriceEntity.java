@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "prices")
+@Table(name = "prices", indexes = {
+        @Index(name = "idx_prices_price_list", columnList = "price_list"),
+        @Index(name = "idx_prices_product", columnList = "product")
+})
 public class PriceEntity {
 
     @Id
