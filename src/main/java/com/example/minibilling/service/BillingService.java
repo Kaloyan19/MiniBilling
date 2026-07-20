@@ -13,15 +13,14 @@ import com.example.minibilling.repository.jpa.UserEntityRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.YearMonth;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class BillingService {
 
+    private final DistributionService distributionService;
     private final UserRepository userRepository;
     private final ReadingRepository readingRepository;
     private final PriceRepository priceRepository;
@@ -30,12 +29,13 @@ public class BillingService {
     private final UserEntityRepository userEntityRepository;
 
     public BillingService(UserRepository userRepository, ReadingRepository readingRepository, PriceRepository priceRepository,
-                          InvoiceRepository invoiceRepository, UserEntityRepository userEntityRepository){
+                          InvoiceRepository invoiceRepository, UserEntityRepository userEntityRepository, DistributionService distributionService){
         this.userRepository = userRepository;
         this.readingRepository = readingRepository;
         this.priceRepository = priceRepository;
         this.invoiceRepository = invoiceRepository;
         this.userEntityRepository = userEntityRepository;
+        this.distributionService = distributionService;
     }
 
     public Optional<Invoice> generateAndSaveInvoice(String reference, YearMonth period) {
@@ -80,26 +80,23 @@ public class BillingService {
                                                  List<PricePeriod> prices,
                                                  User user) {
         List<InvoiceLine> lines = new ArrayList<>();
+        int index = 1;
+
         for (int i = 0; i < readings.size() - 1; i++) {
-            lines.add(createInvoiceLine(readings.get(i),
-                    readings.get(i + 1),
-                    prices,
-                    i + 1, user));
+            Reading from = readings.get(i);
+            Reading to = readings.get(i + 1);
+            double totalQuantity = round2(to.meterReading() - from.meterReading());
+
+            List<DistributionLine> distributed = distributionService.distribute(
+                    from.date(), to.date(), totalQuantity, prices);
+
+            for (DistributionLine dl : distributed) {
+                lines.add(new InvoiceLine(index++, dl.quantity(), dl.start(), dl.end(),
+                        from.product().name(), dl.price(),
+                        user.priceListNumber(), round2(dl.quantity() * dl.price())));
+            }
         }
         return lines;
-    }
-
-    private InvoiceLine createInvoiceLine(Reading from, Reading to,
-                                          List<PricePeriod> prices,
-                                          int index, User user) {
-
-        double consumption = round2(to.meterReading() - from.meterReading());
-        List<PricePeriod> applicablePrices = findApplicablePricePeriods(prices, from, to);
-        PricePeriod price = applicablePrices.get(0);
-        double amount = round2(consumption * price.price());
-
-        return new InvoiceLine(index, consumption, from.date(), to.date(),
-                from.product().name(), price.price(), user.priceListNumber(), amount);
     }
 
     private List<PricePeriod> findApplicablePricePeriods(
@@ -132,14 +129,6 @@ public class BillingService {
                 totalAmount,
                 lines
         );
-    }
-
-    public String findConsumerName(String reference) {
-        return userRepository.findAll().stream()
-                .filter(u -> u.reference().equals(reference))
-                .findFirst()
-                .orElseThrow(() -> new UserNotFoundException(reference))
-                .name();
     }
 
     private double round2(double value){
@@ -179,5 +168,7 @@ public class BillingService {
 
         invoiceRepository.save(entity);
     }
+
+
 
 }

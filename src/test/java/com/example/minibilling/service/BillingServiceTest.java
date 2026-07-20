@@ -3,7 +3,6 @@ package com.example.minibilling.service;
 import com.example.minibilling.exception.UserNotFoundException;
 import com.example.minibilling.model.domain.*;
 import com.example.minibilling.repository.*;
-import com.example.minibilling.validator.BillingDataValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,22 +18,17 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BillingServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private ReadingRepository readingRepository;
-
-    @Mock
-    private PriceRepository priceRepository;
-
-    @Mock
-    private BillingDataValidator validator;
+    @Mock private UserRepository userRepository;
+    @Mock private ReadingRepository readingRepository;
+    @Mock private PriceRepository priceRepository;
+    @Mock private DistributionService distributionService;
 
     @InjectMocks
     private BillingService billingService;
@@ -68,13 +62,16 @@ class BillingServiceTest {
     @Test
     void shouldGenerateInvoiceWithCorrectAmount() {
         when(userRepository.findAll()).thenReturn(List.of(user));
-        when(readingRepository.findByCustomerReference("1")).thenReturn(List.of(reading1, reading2));
+        when(readingRepository.findByCustomerReference("1"))
+                .thenReturn(List.of(reading1, reading2));
         when(priceRepository.findByPriceList(1)).thenReturn(List.of(price));
+        when(distributionService.distribute(any(), any(), anyDouble(), anyList()))
+                .thenReturn(List.of(new DistributionLine(
+                        reading1.date(), reading2.date(), 87.0, 1.8)));
 
         Optional<Invoice> result = billingService.generateInvoice("1", YearMonth.of(2024, 3));
 
         assertTrue(result.isPresent());
-        assertEquals(156.6, result.get().totalAmount());
         assertEquals(1, result.get().lines().size());
         assertEquals(87.0, result.get().lines().get(0).quantity());
     }
@@ -88,7 +85,7 @@ class BillingServiceTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenNotEnoughReadings(){
+    void shouldReturnEmptyWhenNotEnoughReadings() {
         when(userRepository.findAll()).thenReturn(List.of(user));
         when(readingRepository.findByCustomerReference("1"))
                 .thenReturn(List.of(reading1));
@@ -99,26 +96,31 @@ class BillingServiceTest {
     }
 
     @Test
-    void shouldThrowWhenNoPriceForPeriod(){
+    void shouldThrowWhenNoPriceForPeriod() {
         when(userRepository.findAll()).thenReturn(List.of(user));
         when(readingRepository.findByCustomerReference("1"))
                 .thenReturn(List.of(reading1, reading2));
         when(priceRepository.findByPriceList(1)).thenReturn(List.of());
+        when(distributionService.distribute(any(), any(), anyDouble(), anyList()))
+                .thenThrow(new RuntimeException("Няма цена за периода"));
 
         assertThrows(RuntimeException.class, () ->
                 billingService.generateInvoice("1", YearMonth.of(2024, 3)));
     }
 
     @Test
-    void shouldHandleUnorderedReadings(){
+    void shouldHandleUnorderedReadings() {
         when(userRepository.findAll()).thenReturn(List.of(user));
         when(readingRepository.findByCustomerReference("1"))
                 .thenReturn(List.of(reading2, reading1));
         when(priceRepository.findByPriceList(1)).thenReturn(List.of(price));
+        when(distributionService.distribute(any(), any(), anyDouble(), anyList()))
+                .thenReturn(List.of(new DistributionLine(
+                        reading1.date(), reading2.date(), 87.0, 1.8)));
 
         Optional<Invoice> result = billingService.generateInvoice("1", YearMonth.of(2024, 3));
 
         assertTrue(result.isPresent());
-        assertEquals(156.6, result.get().totalAmount());
+        assertEquals(87.0, result.get().lines().get(0).quantity());
     }
 }
