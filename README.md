@@ -66,3 +66,31 @@ referenten_nomer,produkt,data,pokazanie
 
 ### prices-N.csv
 produkt,nachalna_data,kraina_data,cena
+
+## База данни
+
+PostgreSQL 17, порт 5432. Създай база `minibilling`.
+
+### Конфигурация
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/minibilling
+spring.datasource.username=postgres
+spring.datasource.password=твоята_парола
+spring.jpa.hibernate.ddl-auto=update
+```
+
+### Импорт на данни (правилна последователност)
+1. `POST /import` с `prices-1.csv`
+2. `POST /import` с `users.csv`
+3. `POST /import` с `readings.csv`
+
+## Unit тестове за алгоритъма
+
+```bash
+.\mvnw test
+```
+
+Тестовете се намират в `src/test/java/.../service/DistributionServiceTest.java`
+
+
+

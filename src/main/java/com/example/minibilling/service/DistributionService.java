@@ -32,8 +32,7 @@ public class DistributionService {
     private List<DistributionLine> singlePrice(OffsetDateTime start, OffsetDateTime end,
                                                double quantity, PricePeriod price) {
         OffsetDateTime lineEnd = subPeriodEnd(price, end);
-        return List.of(new DistributionLine(start, lineEnd, quantity,
-                round2(quantity * price.price())));
+        return List.of(new DistributionLine(start, lineEnd, quantity, price.price()));
     }
 
     private List<DistributionLine> multiplePrices(OffsetDateTime start, OffsetDateTime end,
