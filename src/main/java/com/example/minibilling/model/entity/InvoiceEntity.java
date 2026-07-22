@@ -29,7 +29,7 @@ public class InvoiceEntity {
     private String period;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
-    private List<LineEntity> lines = new ArrayList<>();
+    private final List<LineEntity> lines = new ArrayList<>();
 
     private boolean paid;
 

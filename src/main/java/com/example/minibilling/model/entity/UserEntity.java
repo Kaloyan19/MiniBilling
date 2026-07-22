@@ -21,13 +21,6 @@ public class UserEntity {
 
     public UserEntity() {}
 
-    public UserEntity(String id, String name, String reference, int priceList) {
-        this.id = id;
-        this.name = name;
-        this.reference = reference;
-        this.priceList = priceList;
-    }
-
     public String getId() {return id;}
     public String getName() {return name;}
     public String getReference() {return reference;}

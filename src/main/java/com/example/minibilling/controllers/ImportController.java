@@ -19,7 +19,7 @@ public class ImportController {
     }
 
     @PostMapping
-    public ResponseEntity<String> importFile(@RequestParam("file") MultipartFile file) throws Exception{
+    public ResponseEntity<String> importFile(@RequestParam("file") MultipartFile file) {
         String filename = file.getOriginalFilename();
 
         FileImporter importer = importers.stream()

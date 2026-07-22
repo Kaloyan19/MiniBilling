@@ -79,7 +79,7 @@ spring.datasource.password=твоята_парола
 spring.jpa.hibernate.ddl-auto=update
 ```
 
-### Импорт на данни (правилна последователност)
+### Импорт на данни (правилна последователност!!!)
 1. `POST /import` с `prices-1.csv`
 2. `POST /import` с `users.csv`
 3. `POST /import` с `readings.csv`

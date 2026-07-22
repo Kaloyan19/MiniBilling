@@ -17,7 +17,6 @@ public interface ReadingEntityRepository extends JpaRepository<ReadingEntity, St
     @Query("SELECT r FROM ReadingEntity r JOIN FETCH r.user")
     List<ReadingEntity> findAll();
 
-
     @Query("SELECT r FROM ReadingEntity r WHERE r.user.reference = :reference")
     List<ReadingEntity> findByUserReference(@Param("reference") String reference);
 }
