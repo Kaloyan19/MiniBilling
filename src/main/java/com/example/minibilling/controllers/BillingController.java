@@ -1,7 +1,6 @@
 package com.example.minibilling.controllers;
 
 import com.example.minibilling.model.domain.Invoice;
-import com.example.minibilling.model.entity.InvoiceEntity;
 import com.example.minibilling.repository.InvoiceRepository;
 import com.example.minibilling.service.BillingService;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +25,7 @@ public class BillingController {
     public ResponseEntity<Invoice> generateInvoice(
             @PathVariable String reference,
             @RequestParam int year,
-            @RequestParam int month) throws Exception {
+            @RequestParam int month) {
 
         YearMonth yearMonth = YearMonth.of(year, month);
         return billingService.generateAndSaveInvoice(reference, yearMonth)
@@ -41,10 +40,8 @@ public class BillingController {
             @RequestParam int month) {
 
         YearMonth yearMonth = YearMonth.of(year, month);
-        InvoiceEntity entity = invoiceRepository.findByUserReferenceAndPeriod(
-                reference, yearMonth.toString());
-
-        if (entity == null) return ResponseEntity.noContent().build();
-        return ResponseEntity.ok(invoiceRepository.toDomain(entity));
+        Invoice invoice = invoiceRepository.findByUserReferenceAndPeriod(reference, yearMonth.toString());
+        if (invoice == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(invoice);
     }
 }

@@ -57,8 +57,10 @@ public class InvoiceRepository {
         invoiceEntityRepository.save(entity);
     }
 
-    public InvoiceEntity findByUserReferenceAndPeriod(String reference, String period) {
-        return invoiceEntityRepository.findByUserReferenceAndPeriod(reference, period);
+    public Invoice findByUserReferenceAndPeriod(String reference, String period) {
+        InvoiceEntity entity = invoiceEntityRepository.findByUserReferenceAndPeriod(reference, period);
+        if (entity == null) return null;
+        return toDomain(entity);
     }
 
     public Invoice toDomain(InvoiceEntity entity) {
