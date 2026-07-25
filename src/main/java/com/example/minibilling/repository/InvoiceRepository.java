@@ -11,7 +11,6 @@ import com.example.minibilling.repository.jpa.UserEntityRepository;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,7 +26,7 @@ public class InvoiceRepository {
         this.userEntityRepository = userEntityRepository;
     }
 
-    public void save(Invoice invoice, String reference, YearMonth period) {
+    public void save(Invoice invoice, String reference, String period) {
         UserEntity userEntity = userEntityRepository.findByReference(reference);
 
         InvoiceEntity entity = new InvoiceEntity();
@@ -36,7 +35,7 @@ public class InvoiceRepository {
         entity.setNumber(invoice.documentNumber());
         entity.setUser(userEntity);
         entity.setTotalAmount(BigDecimal.valueOf(invoice.totalAmount()));
-        entity.setPeriod(period.toString());
+        entity.setPeriod(period);
         entity.setPaid(false);
 
         for (InvoiceLine line : invoice.lines()) {

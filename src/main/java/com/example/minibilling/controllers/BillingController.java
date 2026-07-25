@@ -6,7 +6,8 @@ import com.example.minibilling.service.BillingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.YearMonth;
+import java.io.IOException;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/invoices")
@@ -24,11 +25,10 @@ public class BillingController {
     @PostMapping("/{reference}")
     public ResponseEntity<Invoice> generateInvoice(
             @PathVariable String reference,
-            @RequestParam int year,
-            @RequestParam int month) {
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to) throws IOException {
 
-        YearMonth yearMonth = YearMonth.of(year, month);
-        return billingService.generateAndSaveInvoice(reference, yearMonth)
+        return billingService.generateAndSaveInvoice(reference, from, to)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }
@@ -36,11 +36,11 @@ public class BillingController {
     @GetMapping("/{reference}")
     public ResponseEntity<Invoice> getInvoice(
             @PathVariable String reference,
-            @RequestParam int year,
-            @RequestParam int month) {
+            @RequestParam LocalDate from,
+            @RequestParam LocalDate to) {
 
-        YearMonth yearMonth = YearMonth.of(year, month);
-        Invoice invoice = invoiceRepository.findByUserReferenceAndPeriod(reference, yearMonth.toString());
+        Invoice invoice = invoiceRepository.findByUserReferenceAndPeriod(
+                reference, from + "_" + to);
         if (invoice == null) return ResponseEntity.noContent().build();
         return ResponseEntity.ok(invoice);
     }

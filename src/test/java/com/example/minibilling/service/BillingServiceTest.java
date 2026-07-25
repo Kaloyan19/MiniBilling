@@ -10,9 +10,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -60,8 +60,8 @@ class BillingServiceTest {
     }
 
     @Test
-    void shouldGenerateInvoiceWithCorrectAmount() {
-        when(userRepository.findAll()).thenReturn(List.of(user));
+    void shouldGenerateInvoiceWithCorrectAmount() throws IOException{
+        when(userRepository.findByReference("1")).thenReturn(user);
         when(readingRepository.findByCustomerReference("1"))
                 .thenReturn(List.of(reading1, reading2));
         when(priceRepository.findByPriceList(1)).thenReturn(List.of(price));
@@ -69,7 +69,8 @@ class BillingServiceTest {
                 .thenReturn(List.of(new DistributionLine(
                         reading1.date(), reading2.date(), 87.0, 1.8)));
 
-        Optional<Invoice> result = billingService.generateInvoice("1", YearMonth.of(2024, 3));
+        Optional<Invoice> result = billingService.generateAndSaveInvoice("1",
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
         assertTrue(result.isPresent());
         assertEquals(1, result.get().lines().size());
@@ -78,26 +79,28 @@ class BillingServiceTest {
 
     @Test
     void shouldThrowUserNotFoundExceptionWhenUserDoesNotExist() {
-        when(userRepository.findAll()).thenReturn(List.of());
+        when(userRepository.findByReference("999")).thenReturn(null);
 
         assertThrows(UserNotFoundException.class, () ->
-                billingService.generateInvoice("999", YearMonth.of(2024, 3)));
+                billingService.generateAndSaveInvoice("999",
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31)));
     }
 
     @Test
-    void shouldReturnEmptyWhenNotEnoughReadings() {
-        when(userRepository.findAll()).thenReturn(List.of(user));
+    void shouldReturnEmptyWhenNotEnoughReadings() throws IOException{
+        when(userRepository.findByReference("1")).thenReturn(user);
         when(readingRepository.findByCustomerReference("1"))
                 .thenReturn(List.of(reading1));
 
-        Optional<Invoice> result = billingService.generateInvoice("1", YearMonth.of(2024, 3));
+        Optional<Invoice> result = billingService.generateAndSaveInvoice("1",
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
         assertTrue(result.isEmpty());
     }
 
     @Test
     void shouldThrowWhenNoPriceForPeriod() {
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        when(userRepository.findByReference("1")).thenReturn(user);
         when(readingRepository.findByCustomerReference("1"))
                 .thenReturn(List.of(reading1, reading2));
         when(priceRepository.findByPriceList(1)).thenReturn(List.of());
@@ -105,12 +108,13 @@ class BillingServiceTest {
                 .thenThrow(new RuntimeException("Няма цена за периода"));
 
         assertThrows(RuntimeException.class, () ->
-                billingService.generateInvoice("1", YearMonth.of(2024, 3)));
+                billingService.generateAndSaveInvoice("1",
+                        LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31)));
     }
 
     @Test
-    void shouldHandleUnorderedReadings() {
-        when(userRepository.findAll()).thenReturn(List.of(user));
+    void shouldHandleUnorderedReadings() throws IOException {
+        when(userRepository.findByReference("1")).thenReturn(user);
         when(readingRepository.findByCustomerReference("1"))
                 .thenReturn(List.of(reading2, reading1));
         when(priceRepository.findByPriceList(1)).thenReturn(List.of(price));
@@ -118,7 +122,8 @@ class BillingServiceTest {
                 .thenReturn(List.of(new DistributionLine(
                         reading1.date(), reading2.date(), 87.0, 1.8)));
 
-        Optional<Invoice> result = billingService.generateInvoice("1", YearMonth.of(2024, 3));
+        Optional<Invoice> result = billingService.generateAndSaveInvoice("1",
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 3, 31));
 
         assertTrue(result.isPresent());
         assertEquals(87.0, result.get().lines().get(0).quantity());

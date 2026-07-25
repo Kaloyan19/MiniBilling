@@ -6,8 +6,8 @@ import InvoiceTable from "./components/InvoiceTable";
 
 function App() {
   const [reference, setReference] = useState("");
-  const [year, setYear] = useState("");
-  const [month, setMonth] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [invoice, setInvoice] = useState(null);
   const [error, setError] = useState("");
 
@@ -32,7 +32,7 @@ function App() {
     setInvoice(null);
 
     try {
-      const response = await loadOrGenerateInvoice(reference, year, month);
+      const response = await loadOrGenerateInvoice(reference, from, to);
 
       if (response.status === 404) {
         setError("Потребителят не е намерен.");
@@ -42,6 +42,16 @@ function App() {
       if (response.status === 204) {
         setError("Няма фактура за този период.");
         return;
+      }
+
+      if (response.status === 400) {
+        const text = await response.text();
+        setError(text || "Невалидна заявка.");
+        return;
+    }
+      if (response.status === 500) {
+          setError("Сървърна грешка. Проверете данните.");
+          return;
       }
 
       const data = await response.json();
@@ -57,10 +67,10 @@ function App() {
       <InvoiceForm
         reference={reference}
         setReference={setReference}
-        year={year}
-        setYear={setYear}
-        month={month}
-        setMonth={setMonth}
+        from={from}
+        setFrom={setFrom}
+        to={to}
+        setTo={setTo}
         onSubmit={handleSubmit}
       />
       {error && <p className="error">{error}</p>}

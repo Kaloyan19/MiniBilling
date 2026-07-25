@@ -31,34 +31,34 @@ public class BillingService {
         this.distributionService = distributionService;
     }
 
-    public Optional<Invoice> generateAndSaveInvoice(String reference, YearMonth period) {
-        Optional<Invoice> invoice = generateInvoice(reference, period);
+    public Optional<Invoice> generateAndSaveInvoice(String reference, LocalDate from, LocalDate to) {
+        Optional<Invoice> invoice = generateInvoice(reference, from, to);
         if (invoice.isEmpty()) return Optional.empty();
-
-        invoiceRepository.save(invoice.get(), reference, period);
+        invoiceRepository.save(invoice.get(), reference, from + "_" + to);
         return invoice;
     }
 
-    public Optional<Invoice> generateInvoice(String reference, YearMonth period){
+    private Optional<Invoice> generateInvoice(String reference, LocalDate from, LocalDate to) {
+        if (!from.isBefore(to)) {
+            throw new DateTimeException("Началната дата трябва да е преди крайната!");
+        }
+
         User user = userRepository.findByReference(reference);
         if (user == null) throw new UserNotFoundException(reference);
 
-        List<Reading> readings = findReadings(user, period);
-        if (readings.size() < 2){
-            return Optional.empty();
-        }
+        List<Reading> readings = findReadings(user, from, to);
+        if (readings.size() < 2) return Optional.empty();
 
         List<PricePeriod> prices = findPrices(user);
         List<InvoiceLine> lines = createInvoiceLines(readings, prices, user);
         return Optional.of(buildInvoice(user, lines));
     }
 
-    private List<Reading> findReadings(User user, YearMonth period) {
-        LocalDate endOfPeriod = period.atEndOfMonth();
-
+    private List<Reading> findReadings(User user, LocalDate from, LocalDate to) {
         return readingRepository.findByCustomerReference(user.reference())
                 .stream()
-                .filter(r -> !r.date().toLocalDate().isAfter(endOfPeriod))
+                .filter(r -> !r.date().toLocalDate().isBefore(from))
+                .filter(r -> !r.date().toLocalDate().isAfter(to))
                 .sorted(Comparator.comparing(Reading::date))
                 .toList();
     }

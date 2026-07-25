@@ -26,7 +26,7 @@ public class UserImporter implements FileImporter {
 
     @Override
     public boolean supports(String filename){
-        return "users.csv".equals(filename);
+        return filename.matches("users.*\\.csv");
     }
 
     @Transactional

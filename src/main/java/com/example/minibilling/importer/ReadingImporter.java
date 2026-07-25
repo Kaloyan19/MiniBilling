@@ -33,7 +33,7 @@ public class ReadingImporter implements FileImporter{
 
     @Override
     public boolean supports(String filename) {
-        return "readings.csv".equals(filename);
+        return filename.matches("readings.*\\.csv");
     }
 
     @Transactional
