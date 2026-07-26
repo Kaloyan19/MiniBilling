@@ -27,6 +27,12 @@ public class DataInitializer {
     @Value("${app.admin.password}")
     private String adminPassword;
 
+    @Value("${app.user.username}")
+    private String userUsername;
+
+    @Value("${app.user.password}")
+    private String userPassword;
+
     @PostConstruct
     public void init() {
         if (accountRepository.findByUsername(adminUsername) == null) {
@@ -36,6 +42,15 @@ public class DataInitializer {
             admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setRole(Role.ADMIN);
             accountRepository.save(admin);
+        }
+
+        if (accountRepository.findByUsername("user") == null) {
+            AccountEntity user = new AccountEntity();
+            user.setId(UUID.randomUUID().toString().replace("-", ""));
+            user.setUsername(userUsername);
+            user.setPassword(passwordEncoder.encode(userPassword));
+            user.setRole(Role.USER);
+            accountRepository.save(user);
         }
     }
 }
