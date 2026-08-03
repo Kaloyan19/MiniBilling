@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -15,13 +16,11 @@ public class DistributionService {
 
     private static final ZoneId SOFIA = ZoneId.of("Europe/Sofia");
 
-    public List<DistributionLine> distribute(
-            OffsetDateTime start,
-            OffsetDateTime end,
-            double quantity,
-            List<PricePeriod> prices) {
-
+    public List<DistributionLine> distribute(OffsetDateTime start, OffsetDateTime end,
+                                             double quantity, List<PricePeriod> prices) {
         List<PricePeriod> applicable = findApplicable(prices, start, end);
+        System.out.println("Distribute applicable: " + applicable.size());
+        applicable.forEach(p -> System.out.println(p.startDate() + " " + p.endDate() + " " + p.price()));
 
         if (applicable.size() == 1) {
             return singlePrice(start, end, quantity, applicable.get(0));
@@ -66,6 +65,7 @@ public class DistributionService {
         return prices.stream()
                 .filter(p -> !p.startDate().isAfter(end.toLocalDate()))
                 .filter(p -> !p.endDate().isBefore(start.toLocalDate()))
+                .sorted(Comparator.comparing(PricePeriod::startDate)) // ← сортираме
                 .toList();
     }
 

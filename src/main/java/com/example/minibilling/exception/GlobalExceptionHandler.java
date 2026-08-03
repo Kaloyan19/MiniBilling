@@ -10,7 +10,7 @@ import java.time.DateTimeException;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-  @ExceptionHandler(UserNotFoundException.class)
+  @ExceptionHandler(UserNotFoundException.class) // BillingSErvice no user by refference
   public ResponseEntity<String> handleUserNotFound(UserNotFoundException e) {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
   }
@@ -20,13 +20,13 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
   }
 
-  @ExceptionHandler(DateTimeException.class)
+  @ExceptionHandler(DateTimeException.class) // BillingService when from is after to
   public ResponseEntity<String> handleInvalidPeriod(DateTimeException e) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body("Невалиден период. Месецът трябва да е между 1 и 12.");
   }
 
-  @ExceptionHandler(ImportException.class)
+  @ExceptionHandler(ImportException.class) // when csv is not valid
   public ResponseEntity<String> handleImportException(ImportException e){
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
   }

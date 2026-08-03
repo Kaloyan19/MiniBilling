@@ -9,6 +9,7 @@ public record Invoice(
         String consumer,
         String reference,
         double totalAmount,
-        List<InvoiceLine> lines
-) {
-}
+        double totalAmountWithVat,
+        List<InvoiceLine> lines,
+        List<VatLine> vat
+) {}

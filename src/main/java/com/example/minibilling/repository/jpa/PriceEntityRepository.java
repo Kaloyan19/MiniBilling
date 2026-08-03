@@ -10,4 +10,6 @@ import java.util.List;
 public interface PriceEntityRepository extends JpaRepository<PriceEntity, String>{
     boolean existsByProductAndStartDateAndPriceList(ProductType product, LocalDate startDate, int priceList);
     List<PriceEntity> findByPriceList(int priceList);
+
+    List<PriceEntity> findByPriceListAndProduct(int priceList, ProductType product);
 }

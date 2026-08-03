@@ -39,6 +39,7 @@ public class InvoiceRepository {
         entity.setPaid(false);
 
         for (InvoiceLine line : invoice.lines()) {
+            System.out.println("Saving line: " + line.product() + " index: " + line.index()); // ← тук
             LineEntity lineEntity = new LineEntity();
             lineEntity.setId(UUID.randomUUID().toString().replace("-", ""));
             lineEntity.setLineId(line.index());
@@ -70,9 +71,12 @@ public class InvoiceRepository {
                         l.getStartDateTime(),
                         l.getEndDateTime(),
                         l.getProduct().name(),
+                        "kW/h",          // unit
                         l.getPrice().doubleValue(),
                         l.getPriceList(),
-                        l.getAmount().doubleValue()
+                        l.getAmount().doubleValue(),
+                        null,            // name
+                        null             // lines
                 ))
                 .toList();
 
@@ -82,7 +86,9 @@ public class InvoiceRepository {
                 entity.getUser().getName(),
                 entity.getUser().getReference(),
                 entity.getTotalAmount().doubleValue(),
-                lines
+                entity.getTotalAmount().doubleValue(), // totalAmountWithVat - нямаме го в entity
+                lines,
+                List.of() // vat - нямаме го в entity
         );
     }
 }

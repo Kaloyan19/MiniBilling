@@ -1,6 +1,7 @@
 package com.example.minibilling.repository;
 
 import com.example.minibilling.model.domain.PricePeriod;
+import com.example.minibilling.model.domain.ProductType;
 import com.example.minibilling.model.entity.PriceEntity;
 import com.example.minibilling.repository.jpa.PriceEntityRepository;
 import org.springframework.stereotype.Repository;
@@ -25,6 +26,13 @@ public class PriceRepository {
 
     public List<PricePeriod> findAll() {
         return priceEntityRepository.findAll()
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    public List<PricePeriod> findByPriceListAndProduct(int priceList, ProductType product) {
+        return priceEntityRepository.findByPriceListAndProduct(priceList, product)
                 .stream()
                 .map(this::toDomain)
                 .toList();
