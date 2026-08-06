@@ -1,34 +1,40 @@
 # MiniBilling
 
-Spring Boot REST API с React frontend за фактуриране на газ и електричество по CSV файлове.
+Spring Boot REST API с React frontend за фактуриране на газ и електричество.
+
+## Tech Stack
+
+- Java 17, Spring Boot, Spring Security (JWT)
+- PostgreSQL 17, JPA/Hibernate
+- React, TypeScript, Tailwind CSS
 
 ## Изисквания
 
 - Java 17+
 - Maven
+- PostgreSQL 17
 - Node.js 18+
 
 ## Настройка
 
-### 1. Входни CSV файлове
+### 1. База данни
 
-Създай директория с:
-
-inputdir/
-
-users.csv
-
-readings.csv
-
-prices-1.csv
+Създай база `minibilling` в PostgreSQL.
 
 ### 2. Конфигурация
 
 Копирай `application.properties.example` като `application.properties`:
 
 ```properties
-billing.input.dir=C:/path/to/inputdir/
-billing.output.dir=C:/path/to/outputdir/
+spring.datasource.url=jdbc:postgresql://localhost:5432/minibilling
+spring.datasource.username=postgres
+spring.datasource.password=твоята_парола
+spring.jpa.hibernate.ddl-auto=update
+
+app.admin.username=admin
+app.admin.password=твоята_парола
+app.user.username=user
+app.user.password=твоята_парола
 ```
 
 ## Стартиране
@@ -42,55 +48,55 @@ billing.output.dir=C:/path/to/outputdir/
 ```bash
 cd minibilling-frontend
 npm install
-npm start
+npm run dev
+```
+
+## Импорт на данни
+
+Импортирай CSV файлове чрез `POST /import` в правилна последователност:
+
+1. `prices-N.csv`
+2. `users.csv`
+3. `readings.csv`
+
+### Формат на CSV файловете
+
+**users.csv**
+```
+Ime Prezime,referenten_nomer,nomer_na_cenova_lista
+```
+
+**readings.csv**
+```
+referenten_nomer,produkt,data,pokazanie
+```
+
+**prices-N.csv**
+```
+produkt,nachalna_data,kraina_data,cena
 ```
 
 ## API
-POST /invoices/{reference}?year=2024&month=3  → генерира фактура
 
-GET  /invoices/{reference}?year=2024&month=3  → чете записана фактура
-
-### Статус кодове
-- `200 OK` — фактурата като JSON
-- `204 No Content` — няма достатъчно отчети
-- `404 Not Found` — потребителят не съществува
-- `400 Bad Request` — невалиден формат
-
-## Структура на CSV файловете
-
-### users.csv
-Ime Prezime,referenten_nomer,nomer_na_cenova_lista
-
-### readings.csv
-referenten_nomer,produkt,data,pokazanie
-
-### prices-N.csv
-produkt,nachalna_data,kraina_data,cena
-
-## База данни
-
-PostgreSQL 17, порт 5432. Създай база `minibilling`.
-
-### Конфигурация
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/minibilling
-spring.datasource.username=postgres
-spring.datasource.password=твоята_парола
-spring.jpa.hibernate.ddl-auto=update
+```
+POST /auth/login                          → логин, връща JWT токен
+POST /import                              → импорт на CSV файл (ADMIN)
+POST /invoices/{reference}?from=&to=      → генерира фактура
+GET  /invoices/{reference}?from=&to=      → чете фактура
 ```
 
-### Импорт на данни (правилна последователност!!!)
-1. `POST /import` с `prices-1.csv`
-2. `POST /import` с `users.csv`
-3. `POST /import` с `readings.csv`
+### Статус кодове
+- `200 OK` — успех
+- `204 No Content` — няма достатъчно отчети
+- `400 Bad Request` — невалидни данни
+- `401 Unauthorized` — невалиден токен
+- `403 Forbidden` — недостатъчни права
+- `404 Not Found` — потребителят не съществува
 
-## Unit тестове за алгоритъма
+## Unit тестове
 
 ```bash
 .\mvnw test
 ```
 
-Тестовете се намират в `src/test/java/.../service/DistributionServiceTest.java`
-
-
-
+Тестовете покриват алгоритъма за разпределение на потреблението при смяна на цена.

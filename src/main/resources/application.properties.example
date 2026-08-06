@@ -1,1 +1,15 @@
-billing.input.dir=C:/path/to/input/files/
+spring.application.name=minibilling
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/minibilling
+spring.datasource.username=postgres
+spring.datasource.password=YOUR_PASSWORD
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+billing.input.dir=C:/path/to/inputdir/
+billing.output.dir=C:/path/to/outputdir/
+
+app.admin.username=admin
+app.admin.password=YOUR_PASSWORD
+app.user.username=user
+app.user.password=YOUR_PASSWORD
