@@ -10,7 +10,6 @@ import com.example.minibilling.repository.jpa.InvoiceEntityRepository;
 import com.example.minibilling.repository.jpa.UserEntityRepository;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,7 +33,7 @@ public class InvoiceRepository {
         entity.setDateTime(invoice.documentDate());
         entity.setNumber(invoice.documentNumber());
         entity.setUser(userEntity);
-        entity.setTotalAmount(BigDecimal.valueOf(invoice.totalAmount()));
+        entity.setTotalAmount(invoice.totalAmount());
         entity.setPeriod(period);
         entity.setPaid(false);
 
@@ -43,13 +42,13 @@ public class InvoiceRepository {
             LineEntity lineEntity = new LineEntity();
             lineEntity.setId(UUID.randomUUID().toString().replace("-", ""));
             lineEntity.setLineId(line.index());
-            lineEntity.setQuantity(BigDecimal.valueOf(line.quantity()));
+            lineEntity.setQuantity(line.quantity());
             lineEntity.setStartDateTime(line.lineStart());
             lineEntity.setEndDateTime(line.lineEnd());
             lineEntity.setProduct(ProductType.valueOf(line.product()));
-            lineEntity.setPrice(BigDecimal.valueOf(line.price()));
+            lineEntity.setPrice(line.price());
             lineEntity.setPriceList(line.priceList());
-            lineEntity.setAmount(BigDecimal.valueOf(line.amount()));
+            lineEntity.setAmount(line.amount());
             lineEntity.setInvoice(entity);
             entity.getLines().add(lineEntity);
         }
@@ -67,16 +66,16 @@ public class InvoiceRepository {
         List<InvoiceLine> lines = entity.getLines().stream()
                 .map(l -> new InvoiceLine(
                         l.getLineId(),
-                        l.getQuantity().doubleValue(),
+                        l.getQuantity(),
                         l.getStartDateTime(),
                         l.getEndDateTime(),
                         l.getProduct().name(),
-                        "kW/h",          // unit
-                        l.getPrice().doubleValue(),
+                        "kW/h",
+                        l.getPrice(),
                         l.getPriceList(),
-                        l.getAmount().doubleValue(),
-                        null,            // name
-                        null             // lines
+                        l.getAmount(),
+                        null,
+                        null
                 ))
                 .toList();
 
@@ -85,10 +84,10 @@ public class InvoiceRepository {
                 entity.getNumber(),
                 entity.getUser().getName(),
                 entity.getUser().getReference(),
-                entity.getTotalAmount().doubleValue(),
-                entity.getTotalAmount().doubleValue(), // totalAmountWithVat - нямаме го в entity
+                entity.getTotalAmount(),
+                entity.getTotalAmount(),
                 lines,
-                List.of() // vat - нямаме го в entity
+                List.of()
         );
     }
 }

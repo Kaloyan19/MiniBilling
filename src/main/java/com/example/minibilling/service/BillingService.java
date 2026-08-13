@@ -8,6 +8,8 @@ import com.example.minibilling.repository.ReadingRepository;
 import com.example.minibilling.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -35,7 +37,6 @@ public class BillingService {
     public Optional<Invoice> generateAndSaveInvoice(String reference, LocalDate from, LocalDate to) {
         Optional<Invoice> invoice = generateInvoice(reference, from, to);
         if (invoice.isEmpty()) return Optional.empty();
-        System.out.println("Lines: " + invoice.get().lines().size()); // ← тук
         invoiceRepository.save(invoice.get(), reference, from + "_" + to);
         return invoice;
     }
@@ -53,9 +54,7 @@ public class BillingService {
 
         List<PricePeriod> prices = findPrices(user);
         List<InvoiceLine> lines = createInvoiceLines(readings, prices, user);
-        System.out.println("Invoice lines: " + lines.size());
         Invoice inv = buildInvoice(user, lines);
-        System.out.println("All lines: " + inv.lines().size());
         return Optional.of(buildInvoice(user, lines));
     }
 
@@ -83,20 +82,19 @@ public class BillingService {
             Reading to = readings.get(i + 1);
             double totalQuantity = round2(to.meterReading() - from.meterReading());
 
-            // филтрираме само цените за този продукт (gas/electricity)
             List<PricePeriod> productPrices = prices.stream()
                     .filter(p -> p.product() == from.product())
                     .toList();
-            System.out.println("Product prices for " + from.product() + ": " + productPrices.size());
 
             List<DistributionLine> distributed = distributionService.distribute(
                     from.date(), to.date(), totalQuantity, productPrices);
 
             for (DistributionLine dl : distributed) {
-                System.out.println("DL: " + dl.quantity() + " price: " + dl.price() + " start: " + dl.start() + " end: " + dl.end());
-                lines.add(new InvoiceLine(index++, dl.quantity(), dl.start(), dl.end(),
-                        from.product().name(), "kW/h", dl.price(),
-                        user.priceListNumber(), round2(dl.quantity() * dl.price()),
+                lines.add(new InvoiceLine(index++, money(dl.quantity()), dl.start(), dl.end(),
+                        from.product().name(), "kW/h",
+                        money(dl.price()),
+                        user.priceListNumber(),
+                        money(round2(dl.quantity() * dl.price())),
                         null, null));
             }
         }
@@ -130,13 +128,13 @@ public class BillingService {
 
         List<VatLine> vat = generateVatLines(allLines);
 
-        double totalAmount = round2(
-                allLines.stream().mapToDouble(InvoiceLine::amount).sum()
-        );
+        BigDecimal totalAmount = money(round2(
+                allLines.stream().mapToDouble(l -> l.amount().doubleValue()).sum()
+        ));
 
-        double totalAmountWithVat = round2(
-                totalAmount + vat.stream().mapToDouble(VatLine::amount).sum()
-        );
+        BigDecimal totalAmountWithVat = money(round2(
+                totalAmount.doubleValue() + vat.stream().mapToDouble(VatLine::amount).sum()
+        ));
 
         return new Invoice(
                 OffsetDateTime.now(),
@@ -156,60 +154,80 @@ public class BillingService {
         List<PricePeriod> cclPrices = priceRepository.findByPriceListAndProduct(
                 user.priceListNumber(), ProductType.CCL);
 
-        List<InvoiceLine> taxes = new ArrayList<>();
-
         OffsetDateTime start = lines.get(0).lineStart();
         OffsetDateTime end = lines.get(lines.size()-1).lineEnd();
-        ZoneId SOFIA = ZoneId.of("Europe/Sofia");
 
-        // SC — изчисляваме дните директно за всяка цена
+        List<InvoiceLine> taxes = new ArrayList<>();
+        taxes.addAll(generateScLines(lines, scPrices, start, end));
+        taxes.addAll(generateCclLines(lines, cclPrices, start, end));
+
+        return assignIndexes(taxes, lines.size() + 1);
+    }
+
+    private List<InvoiceLine> generateScLines(List<InvoiceLine> lines,
+                                              List<PricePeriod> scPrices,
+                                              OffsetDateTime start,
+                                              OffsetDateTime end) {
+        List<InvoiceLine> result = new ArrayList<>();
+
         for (PricePeriod scPrice : scPrices) {
-            OffsetDateTime scStart = scPrice.startDate().atStartOfDay(SOFIA).toOffsetDateTime();
-            OffsetDateTime scEnd = scPrice.endDate().atTime(23, 59, 59).atZone(SOFIA).toOffsetDateTime();
+            OffsetDateTime scStart = scPrice.startDate().atStartOfDay(ZoneOffset.UTC).toOffsetDateTime();
+            OffsetDateTime scEnd = scPrice.endDate().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
 
             OffsetDateTime lineStart = scStart.isBefore(start) ? start : scStart;
             OffsetDateTime lineEnd = scEnd.isAfter(end) ? end : scEnd;
 
             if (lineStart.isAfter(lineEnd)) continue;
 
-            LocalDate ld = lineStart.atZoneSameInstant(SOFIA).toLocalDate();
-            LocalDate le = lineEnd.atZoneSameInstant(SOFIA).toLocalDate();
-            int days = (int) ChronoUnit.DAYS.between(ld, le) + 1;
+            int days = (int) ChronoUnit.DAYS.between(lineStart.toLocalDate(), lineEnd.toLocalDate()) + 1;
 
-            List<Integer> matchingLines = lines.stream()
-                    .filter(l -> !l.lineStart().isAfter(lineEnd)
-                            && !l.lineEnd().isBefore(lineStart))
-                    .map(InvoiceLine::index)
-                    .toList();
+            List<Integer> matchingLines = findMatchingLines(lines, lineStart, lineEnd);
 
-            taxes.add(new InvoiceLine(
-                    0, days, lineStart, lineEnd,
+            result.add(new InvoiceLine(
+                    0, money(days), lineStart, lineEnd,
                     ProductType.STANDING_CHARGE.name(), "days",
-                    scPrice.price(), 0, round2(days * scPrice.price()),
+                    money(scPrice.price()), 0,
+                    money(round2(days * scPrice.price())),
                     "Standing charge", matchingLines
             ));
         }
+        return result;
+    }
 
-        // CCL — ползваме distribute() с round2 в ratio
-        double totalQuantity = lines.stream().mapToDouble(InvoiceLine::quantity).sum();
+    private List<InvoiceLine> generateCclLines(List<InvoiceLine> lines,
+                                               List<PricePeriod> cclPrices,
+                                               OffsetDateTime start,
+                                               OffsetDateTime end) {
+        double totalQuantity = lines.stream()
+                .mapToDouble(l -> l.quantity().doubleValue())
+                .sum();
+        List<InvoiceLine> result = new ArrayList<>();
 
         distributionService.distribute(start, end, totalQuantity, cclPrices)
                 .forEach(dl -> {
-                    List<Integer> matchingLines = lines.stream()
-                            .filter(l -> !l.lineStart().isAfter(dl.end())
-                                    && !l.lineEnd().isBefore(dl.start()))
-                            .map(InvoiceLine::index)
-                            .toList();
-                    taxes.add(new InvoiceLine(
-                            0, dl.quantity(), dl.start(), dl.end(),
+                    List<Integer> matchingLines = findMatchingLines(lines, dl.start(), dl.end());
+                    result.add(new InvoiceLine(
+                            0, money(dl.quantity()), dl.start(), dl.end(),
                             ProductType.CCL.name(), "kW/h",
-                            dl.price(), 0, round2(dl.quantity() * dl.price()),
+                            money(dl.price()), 0,
+                            money(round2(dl.quantity() * dl.price())),
                             "CCL", matchingLines
                     ));
                 });
+        return result;
+    }
 
-        // присвояваме индексите
-        int index = lines.size() + 1;
+    private List<Integer> findMatchingLines(List<InvoiceLine> lines,
+                                            OffsetDateTime start,
+                                            OffsetDateTime end) {
+        return lines.stream()
+                .filter(l -> !l.lineStart().isAfter(end) && !l.lineEnd().isBefore(start))
+                .map(InvoiceLine::index)
+                .toList();
+    }
+
+    private List<InvoiceLine> assignIndexes(List<InvoiceLine> taxes, int startIndex) {
+        int index = startIndex;
         List<InvoiceLine> indexed = new ArrayList<>();
         for (InvoiceLine tax : taxes) {
             indexed.add(new InvoiceLine(index++, tax.quantity(), tax.lineStart(),
@@ -226,7 +244,9 @@ public class BillingService {
                 .map(InvoiceLine::index)
                 .toList();
 
-        double totalBase = allLines.stream().mapToDouble(InvoiceLine::amount).sum();
+        double totalBase = allLines.stream()
+                .mapToDouble(l -> l.amount().doubleValue())
+                .sum();
         double vatAmount = round2(totalBase * vatPercentage / 100);
 
         return List.of(new VatLine(1, allIndexes, vatPercentage, vatAmount));
@@ -238,5 +258,9 @@ public class BillingService {
 
     private double round3(double value){
         return Math.ceil(value * 1000) / 100.00;
+    }
+
+    private BigDecimal money(double value) {
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
     }
 }

@@ -1,18 +1,23 @@
 package com.example.minibilling.model.domain;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
 public record InvoiceLine(
         int index,
-        double quantity,
+        BigDecimal quantity,
         OffsetDateTime lineStart,
         OffsetDateTime lineEnd,
         String product,
         String unit,
-        double price,
+        BigDecimal price,
         int priceList,
-        double amount,
+        BigDecimal amount,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         String name,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         List<Integer> lines
 ) {}

@@ -4,8 +4,9 @@ import com.example.minibilling.model.domain.DistributionLine;
 import com.example.minibilling.model.domain.PricePeriod;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,12 +15,9 @@ import java.util.List;
 @Service
 public class DistributionService {
 
-    private static final ZoneId SOFIA = ZoneId.of("Europe/Sofia");
-
     public List<DistributionLine> distribute(OffsetDateTime start, OffsetDateTime end,
                                              double quantity, List<PricePeriod> prices) {
         List<PricePeriod> applicable = findApplicable(prices, start, end);
-        System.out.println("Distribute applicable: " + applicable.size());
         applicable.forEach(p -> System.out.println(p.startDate() + " " + p.endDate() + " " + p.price()));
 
         if (applicable.size() == 1) {
@@ -70,21 +68,21 @@ public class DistributionService {
     }
 
     private OffsetDateTime subPeriodEnd(PricePeriod price, OffsetDateTime qEnd) {
-        var priceEnd = price.endDate().atTime(23, 59, 59).atZone(SOFIA);
-        var qEndSofia = qEnd.atZoneSameInstant(SOFIA);
-        return priceEnd.isBefore(qEndSofia) ? priceEnd.toOffsetDateTime() : qEnd;
+        OffsetDateTime priceEnd = price.endDate()
+                .atTime(23, 59, 59)
+                .atOffset(ZoneOffset.UTC);
+        return priceEnd.isBefore(qEnd) ? priceEnd : qEnd;
     }
 
     private OffsetDateTime nextPeriodStart(OffsetDateTime lineEnd) {
         return lineEnd.plusSeconds(1)
-                .atZoneSameInstant(SOFIA)
-                .withHour(0).withMinute(0).withSecond(0)
-                .toOffsetDateTime();
+                .withOffsetSameInstant(ZoneOffset.UTC)
+                .truncatedTo(ChronoUnit.DAYS);
     }
 
     private int countDays(OffsetDateTime start, OffsetDateTime end) {
-        var startDate = start.atZoneSameInstant(SOFIA).toLocalDate();
-        var endDate = end.atZoneSameInstant(SOFIA).toLocalDate();
+        LocalDate startDate = start.toLocalDate();
+        LocalDate endDate = end.toLocalDate();
         return (int) ChronoUnit.DAYS.between(startDate, endDate) + 1;
     }
 
