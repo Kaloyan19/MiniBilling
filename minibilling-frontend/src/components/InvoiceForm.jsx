@@ -1,11 +1,6 @@
-function InvoiceForm({ reference, setReference, from, setFrom, to, setTo, onSubmit }) {
+function InvoiceForm({ from, setFrom, to, setTo, onSubmit }) {
   return (
     <div className="form">
-      <input
-        placeholder="Референтен номер"
-        value={reference}
-        onChange={(e) => setReference(e.target.value)}
-      />
       <input
         type="date"
         value={from}

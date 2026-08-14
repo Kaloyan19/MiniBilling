@@ -1,15 +1,30 @@
 import './App.css';
 import { useState } from "react";
-import { loadOrGenerateInvoice } from "./api/invoiceApi";
 import InvoiceForm from "./components/InvoiceForm";
 import InvoiceTable from "./components/InvoiceTable";
+import Login from "./components/Login";
+import Register from "./components/Register";
 
 function App() {
-  const [reference, setReference] = useState("");
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [page, setPage] = useState("login");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [invoice, setInvoice] = useState(null);
   const [error, setError] = useState("");
+
+  const handleLogin = (token) => {
+    setToken(token);
+    setPage("app");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    setToken(null);
+    setPage("login");
+    setInvoice(null);
+  };
 
   const formatDate = (isoString) => {
     const date = new Date(isoString);
@@ -32,15 +47,13 @@ function App() {
     setInvoice(null);
 
     try {
-      const response = await loadOrGenerateInvoice(reference, from, to);
+      const response = await fetch(
+        `http://localhost:8080/invoices/my?from=${from}&to=${to}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       if (response.status === 404) {
         setError("Потребителят не е намерен.");
-        return;
-      }
-
-      if (response.status === 204) {
-        setError("Няма фактура за този период.");
         return;
       }
 
@@ -48,25 +61,75 @@ function App() {
         const text = await response.text();
         setError(text || "Невалидна заявка.");
         return;
-    }
-      if (response.status === 500) {
-          setError("Сървърна грешка. Проверете данните.");
-          return;
       }
 
-      const data = await response.json();
-      setInvoice(data);
+      if (response.status === 401) {
+        setError("Сесията е изтекла. Моля влезте отново.");
+        handleLogout();
+        return;
+      }
+
+      if (response.status === 403) {
+        setError("Нямате права за тази операция.");
+        return;
+      }
+
+      if (response.status === 500) {
+        setError("Сървърна грешка. Проверете данните.");
+        return;
+      }
+
+      if (response.status === 204) {
+        const postResponse = await fetch(
+          `http://localhost:8080/invoices/my?from=${from}&to=${to}`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        if (postResponse.status === 204) {
+          setError("Няма достатъчно отчети за този период.");
+          return;
+        }
+
+        if (postResponse.status === 400) {
+          const text = await postResponse.text();
+          setError(text || "Невалидна заявка.");
+          return;
+        }
+
+        if (postResponse.ok) {
+          const data = await postResponse.json();
+          setInvoice(data);
+          return;
+        }
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        setInvoice(data);
+      }
     } catch (e) {
       setError("Грешка при свързване със сървъра.");
     }
   };
 
+  if (page === "login") {
+    return <Login onLogin={handleLogin} onSwitchToRegister={() => setPage("register")} />;
+  }
+
+  if (page === "register") {
+    return <Register onSwitchToLogin={() => setPage("login")} />;
+  }
+
   return (
     <div className="container">
-      <h1>MiniBilling</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1>MiniBilling</h1>
+        <button onClick={handleLogout} style={{ background: "#e74c3c" }}>Изход</button>
+      </div>
       <InvoiceForm
-        reference={reference}
-        setReference={setReference}
         from={from}
         setFrom={setFrom}
         to={to}
