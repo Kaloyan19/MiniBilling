@@ -1,6 +1,8 @@
 package com.example.minibilling.controllers;
 
+import com.example.minibilling.exception.ImportException;
 import com.example.minibilling.importer.FileImporter;
+import com.example.minibilling.model.domain.ImportResult;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,15 +21,19 @@ public class ImportController {
     }
 
     @PostMapping
-    public ResponseEntity<String> importFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<ImportResult> importFile(@RequestParam("file") MultipartFile file) {
         String filename = file.getOriginalFilename();
+
+        if (file.isEmpty()) {
+            throw new ImportException("Файлът е празен!");
+        }
 
         FileImporter importer = importers.stream()
                 .filter(i -> i.supports(filename))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Неподържан файл " + filename));
+                .orElseThrow(() -> new ImportException("Неподдържан файл: " + filename));
 
-        importer.importFile(file);
-        return ResponseEntity.ok("Файлът е импортиран успешно: " + filename);
+        ImportResult result = importer.importFile(file);
+        return ResponseEntity.ok(result);
     }
 }

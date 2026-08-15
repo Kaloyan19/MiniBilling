@@ -1,20 +1,17 @@
 package com.example.minibilling.importer;
 
 import com.example.minibilling.exception.ImportException;
+import com.example.minibilling.model.domain.ImportError;
 import com.example.minibilling.model.entity.UserEntity;
 import com.example.minibilling.repository.jpa.UserEntityRepository;
 import com.example.minibilling.validator.ImportValidator;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
-public class UserImporter implements FileImporter {
+public class UserImporter extends BaseImporter {
 
     private final UserEntityRepository userEntityRepository;
     private final ImportValidator importValidator;
@@ -25,42 +22,31 @@ public class UserImporter implements FileImporter {
     }
 
     @Override
-    public boolean supports(String filename){
+    public boolean supports(String filename) {
         return filename.matches("users.*\\.csv");
     }
 
-    @Transactional
     @Override
-    public void importFile(MultipartFile file) throws ImportException {
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                processLine(line);
-            }
-        } catch (ImportException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ImportException("Грешка при импорт: " + e.getMessage());
-        }
-    }
-
-    private void processLine(String line) throws ImportException {
+    protected Optional<ImportError> processLine(String line, int lineNumber) throws ImportException {
         String[] parts = line.trim().split("\\s*,\\s*");
         if (parts.length != 3) {
-            throw new ImportException("Невалиден ред в users.csv: " + line);
+            throw new ImportException("Невалиден брой колони на ред " + lineNumber + ": " + line);
         }
-        checkForDuplicate(parts);
-        UserEntity entity = buildEntity(parts);
-        importValidator.validateUser(entity.getName(), entity.getReference(), entity.getPriceList());
-        userEntityRepository.save(entity);
-    }
 
-    private void checkForDuplicate(String[] parts) throws ImportException {
         if (userEntityRepository.findByReference(parts[1]) != null) {
-            throw new ImportException("Потребител с референтен номер " + parts[1] + " вече съществува!");
+            return Optional.of(new ImportError(lineNumber, line,
+                    "Потребител с референтен номер " + parts[1] + " вече съществува!", false));
         }
-        importValidator.validateUserPriceList(Integer.parseInt(parts[2]));
+
+        try {
+            importValidator.validateUserPriceList(Integer.parseInt(parts[2]));
+            UserEntity entity = buildEntity(parts);
+            importValidator.validateUser(entity.getName(), entity.getReference(), entity.getPriceList());
+            userEntityRepository.save(entity);
+            return Optional.empty();
+        } catch (ImportException e) {
+            return Optional.of(new ImportError(lineNumber, line, e.getMessage(), true));
+        }
     }
 
     private UserEntity buildEntity(String[] parts) {
