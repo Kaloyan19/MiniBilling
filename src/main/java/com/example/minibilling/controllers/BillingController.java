@@ -5,10 +5,12 @@ import com.example.minibilling.model.entity.AccountEntity;
 import com.example.minibilling.repository.InvoiceRepository;
 import com.example.minibilling.repository.jpa.AccountEntityRepository;
 import com.example.minibilling.service.BillingService;
+import com.example.minibilling.service.InvoiceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.io.IOException;
 import java.time.LocalDate;
 
@@ -20,11 +22,14 @@ public class BillingController {
     private final BillingService billingService;
     private final InvoiceRepository invoiceRepository;
     private final AccountEntityRepository accountRepository;
+    private final InvoiceService invoiceService;
 
-    public BillingController(BillingService billingService, InvoiceRepository invoiceRepository, AccountEntityRepository accountRepository){
+    public BillingController(BillingService billingService, InvoiceRepository invoiceRepository,
+                             AccountEntityRepository accountRepository, InvoiceService invoiceService){
         this.billingService = billingService;
         this.invoiceRepository = invoiceRepository;
         this.accountRepository = accountRepository;
+        this.invoiceService = invoiceService;
     }
 
     @PostMapping("/{reference}")
@@ -82,5 +87,17 @@ public class BillingController {
                         account.getCustomerReference(), from, to)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Invoice>> getAllInvoices(
+            @RequestParam(required = false) String sortBy) {
+        return ResponseEntity.ok(invoiceService.getAllInvoices(sortBy));
+    }
+
+    @GetMapping("/by-reference")
+    public ResponseEntity<List<Invoice>> getInvoicesByReference(
+            @RequestParam String reference) {
+        return ResponseEntity.ok(invoiceService.getInvoicesByReference(reference));
     }
 }

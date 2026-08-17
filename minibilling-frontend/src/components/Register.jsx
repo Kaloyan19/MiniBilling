@@ -30,7 +30,7 @@ function Register({ onSwitchToLogin }) {
   };
 
   return (
-    <div className="container">
+    <div className="auth-container">
       <h1>MiniBilling</h1>
       <div className="form">
         <input

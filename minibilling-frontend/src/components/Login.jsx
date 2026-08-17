@@ -17,20 +17,24 @@ function Login({ onLogin, onSwitchToRegister }) {
 
       if (response.ok) {
         const token = await response.text();
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const role = payload.role;
+        
         localStorage.setItem("token", token);
         localStorage.setItem("username", username);
-        onLogin(token);
-      } else {
+        localStorage.setItem("role", role);
+        onLogin(token, role);
+    } else {
         const text = await response.text();
         setError(text || "Невалидно потребителско име или парола.");
-      }
+    }
     } catch (e) {
       setError("Грешка при свързване със сървъра.");
     }
   };
 
   return (
-    <div className="container">
+    <div className="auth-container">
       <h1>MiniBilling</h1>
       <div className="form">
         <input

@@ -10,6 +10,7 @@ import com.example.minibilling.repository.jpa.InvoiceEntityRepository;
 import com.example.minibilling.repository.jpa.UserEntityRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -89,5 +90,20 @@ public class InvoiceRepository {
                 lines,
                 List.of()
         );
+    }
+
+    public List<Invoice> findAll() {
+        return invoiceEntityRepository.findAllOrderByDateTimeDesc()
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    public List<Invoice> findByUserReference(String reference) {
+        return invoiceEntityRepository.findByUserReference(reference)
+                .stream()
+                .map(this::toDomain)
+                .sorted(Comparator.comparing(Invoice::documentDate).reversed())
+                .toList();
     }
 }
