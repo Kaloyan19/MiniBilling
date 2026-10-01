@@ -5,6 +5,7 @@ import InvoiceTable from "./components/InvoiceTable";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import ImportPage from "./components/ImportPage";
+import AllInvoicesPage from "./components/AllInvoicesPage";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -114,7 +115,7 @@ function App() {
 
       <main className="main-content">
         {page === "import" && <ImportPage token={token} />}
-        {page === "invoices" && <div>Всички фактури - предстои</div>}
+        {page === "invoices" && <AllInvoicesPage token={token} />}
         {page === "logs" && <div>Логове - предстои</div>}
         {page === "invoice" && (
           <>
