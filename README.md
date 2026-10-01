@@ -100,3 +100,7 @@ GET  /invoices/{reference}?from=&to=      → чете фактура
 ```
 
 Тестовете покриват алгоритъма за разпределение на потреблението при смяна на цена.
+
+## Known Issues / Notes
+- setState is async in React — avoid calling functions that depend on
+  new state value in the same onClick handler
