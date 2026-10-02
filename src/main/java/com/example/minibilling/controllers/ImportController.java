@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/import")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class ImportController {
 
     private final List<FileImporter> importers;

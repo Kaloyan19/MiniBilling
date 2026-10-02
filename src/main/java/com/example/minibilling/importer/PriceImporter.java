@@ -45,6 +45,7 @@ public class PriceImporter extends BaseImporter {
     @Transactional
     @Override
     public ImportResult importFile(MultipartFile file) throws ImportException {
+        logStart(file.getOriginalFilename());
         List<ImportError> errors = new ArrayList<>();
         int success = 0;
         int failed = 0;
@@ -63,6 +64,7 @@ public class PriceImporter extends BaseImporter {
                 if (error.isPresent()) {
                     failed++;
                     errors.add(error.get());
+                    logError(error.get());
                 } else {
                     success++;
                 }
@@ -70,6 +72,8 @@ public class PriceImporter extends BaseImporter {
         } catch (IOException e) {
             throw new ImportException("Грешка при четене на файла: " + e.getMessage());
         }
+
+        logEnd(success, failed, file.getOriginalFilename());
 
         return new ImportResult(success, failed, errors);
     }
