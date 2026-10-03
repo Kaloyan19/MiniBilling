@@ -101,6 +101,19 @@ GET  /invoices/{reference}?from=&to=      → чете фактура
 
 Тестовете покриват алгоритъма за разпределение на потреблението при смяна на цена.
 
-## Known Issues / Notes
-- setState is async in React — avoid calling functions that depend on
-  new state value in the same onClick handler
+## Проблеми / Бележки
+- `setState` в React е асинхронно — избягвай извикване на функции, които зависят от
+  новата стойност в същия `onClick` handler
+
+## Windows конзола encoding
+
+При стартиране на Windows конзолата може да показва кирилицата неправилно.
+Изпълни следната команда в PowerShell преди стартиране на приложението:
+
+```powershell
+chcp 65001
+```
+
+
+Лог файлът (logs/minibilling.log) винаги се записва в UTF-8
+независимо от encoding-а на конзолата.

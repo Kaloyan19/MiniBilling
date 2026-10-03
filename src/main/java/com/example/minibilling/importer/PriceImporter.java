@@ -8,7 +8,6 @@ import com.example.minibilling.model.entity.PriceEntity;
 import com.example.minibilling.repository.jpa.PriceEntityRepository;
 import com.example.minibilling.validator.ImportValidator;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -16,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,7 +42,6 @@ public class PriceImporter extends BaseImporter {
         throw new ImportException("Използвай importFile() директно за PriceImporter");
     }
 
-    @Transactional
     @Override
     public ImportResult importFile(MultipartFile file) throws ImportException {
         logStart(file.getOriginalFilename());
@@ -101,8 +100,10 @@ public class PriceImporter extends BaseImporter {
             return Optional.empty();
         } catch (ImportException e) {
             return Optional.of(new ImportError(lineNumber, line, e.getMessage(), true));
+        } catch (DateTimeParseException e) {
+            return Optional.of(new ImportError(lineNumber, line, "Невалидна дата: " + e.getMessage(), true));
         } catch (Exception e) {
-            return Optional.of(new ImportError(lineNumber, line, "Невалидни данни: " + e.getMessage(), true));
+            return Optional.of(new ImportError(lineNumber, line, "Грешка при запис: " + e.getMessage(), false));
         }
     }
 

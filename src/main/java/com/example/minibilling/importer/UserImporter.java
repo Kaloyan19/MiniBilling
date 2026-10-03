@@ -46,6 +46,8 @@ public class UserImporter extends BaseImporter {
             return Optional.empty();
         } catch (ImportException e) {
             return Optional.of(new ImportError(lineNumber, line, e.getMessage(), true));
+        } catch (Exception e) {
+            return Optional.of(new ImportError(lineNumber, line, "Грешка при запис: " + e.getMessage(), false));
         }
     }
 

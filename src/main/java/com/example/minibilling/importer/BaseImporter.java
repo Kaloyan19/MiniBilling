@@ -36,7 +36,6 @@ public abstract class BaseImporter implements FileImporter {
                 success, failed, filename);
     }
 
-    @Transactional
     @Override
     public ImportResult importFile(MultipartFile file) throws ImportException {
         logStart(file.getOriginalFilename());
